@@ -6,8 +6,8 @@ export default defineConfig({
   plugins: [react()],
   define: {
     'process.env': JSON.stringify({
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY || 'AIzaSyBIuzjadBXsPaK8wTT3mQAJBDBDYSxfAv8',
-      API_KEY: process.env.API_KEY || 'AIzaSyBIuzjadBXsPaK8wTT3mQAJBDBDYSxfAv8',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+      API_KEY: process.env.API_KEY || '',
       NODE_ENV: process.env.NODE_ENV || 'production',
     }),
   },
