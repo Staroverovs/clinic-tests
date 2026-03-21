@@ -1440,11 +1440,18 @@ export default function App() {
                         </div>
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Клиническое заключение</h2>
-                            <p className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wide font-bold mt-1">AI-ассистент клиники «Диалектика»</p>
+                            <p className="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wide font-bold mt-1">AI-анализ результатов</p>
                         </div>
                     </div>
                     
-                    <div className="w-full lg:w-auto">
+                    <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                        <button
+                            onClick={generateAiInterpretation}
+                            disabled={isAiLoading}
+                            className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 font-semibold rounded-xl hover:bg-slate-50 transition-all text-sm flex items-center gap-2 disabled:opacity-50"
+                        >
+                            {isAiLoading ? <><i className="fas fa-circle-notch fa-spin"></i> Анализируем...</> : <><i className="fas fa-rotate-right"></i> Повторить анализ</>}
+                        </button>
                         <AppointmentButton />
                     </div>
                     </div>
