@@ -5,16 +5,8 @@ import { TestResult, TestDefinition } from '../types';
 // Helper to safely get the API key
 const getApiKey = () => {
   try {
-    // Priority:
-    // 1. User-selected key from AI Studio dialog (process.env.API_KEY)
-    // 2. System-provided Gemini key (process.env.GEMINI_API_KEY)
-    
-    // Check if process.env is available (it might be polyfilled or injected)
-    const env = (typeof process !== 'undefined' ? process.env : {}) as any;
-    const key = env.API_KEY || env.GEMINI_API_KEY;
-    
-    if (key && key !== 'undefined' && key !== 'null') return key;
-    
+    const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    if (key && key !== 'undefined' && key !== 'null' && key !== '') return key;
     return undefined;
   } catch (e) {
     return undefined;
@@ -63,7 +55,7 @@ export async function getSmartRecommendations(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-flash-latest', 
+      model: 'gemini-2.0-flash', 
       contents: `Жалобы пациента: "${symptoms}". Подобрать подходящие тесты.`,
       config: {
         systemInstruction: systemInstruction,
@@ -117,7 +109,7 @@ export async function getSelfKnowledgeRecommendations(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-flash-latest',
+      model: 'gemini-2.0-flash',
       contents: `Запрос пользователя: "${goal}". Подобрать батарею тестов.`,
       config: {
         systemInstruction: systemInstruction,
@@ -155,7 +147,7 @@ export async function getSelfKnowledgeInterpretation(results: TestResult[], user
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-3.1-pro-preview',
+            model: 'gemini-2.0-flash',
             contents: `
             Роль: Эксперт по психологии личности и карьерному коучингу.
             Задача: Дать глубокую, персонализированную интерпретацию личности на основе тестов. Это НЕ медицинский диагноз, а психологический портрет.
@@ -217,7 +209,7 @@ export async function getAggregateInterpretation(results: TestResult[], userComp
   const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-2.0-flash',
       contents: `
       Роль: Ведущий клинический психолог центра "Диалектика". 
       Задача: Составить персонализированное заключение на основе жалоб и тестов.
