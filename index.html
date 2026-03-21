@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-auto min-h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Клиника Диалектика — Самодиагностика</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        :root {
+          --brand-teal: #4A6D7C;
+          --brand-slate: #87A1AD;
+        }
+
+        html, body {
+            height: auto;
+            min-height: 100%;
+        }
+
+        /* 
+           Responsive Typography Scaling for High-DPI Monitors (2K/4K).
+           Tailwind uses 'rem' (root em). By increasing the HTML font-size, 
+           we proportionally scale up ALL text, padding, and margins 
+           without rewriting individual components.
+        */
+        html {
+            font-size: 16px; /* Standard for laptops/FHD */
+        }
+
+        @media (min-width: 1921px) {
+            html {
+                font-size: 18px; /* Mild zoom for large FHD+ or small 2K */
+            }
+        }
+
+        @media (min-width: 2560px) {
+            html {
+                font-size: 20px; /* Optimized for 2K / QHD (2560x1440) */
+            }
+        }
+
+        @media (min-width: 3840px) {
+            html {
+                font-size: 26px; /* Optimized for 4K (3840x2160) */
+            }
+        }
+
+        body { 
+          font-family: 'Plus Jakarta Sans', sans-serif; 
+          color: #334155;
+          -webkit-font-smoothing: antialiased;
+          background-color: #F0F4F8;
+          background-image: 
+            radial-gradient(at 0% 0%, rgba(74, 109, 124, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(135, 161, 173, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(74, 109, 124, 0.1) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, rgba(255, 255, 255, 0.5) 0px, transparent 50%);
+          background-size: cover;
+          background-repeat: no-repeat;
+        }
+
+        /* Floating Blobs Animation Background */
+        .bg-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out alternate;
+        }
+        .blob-1 { top: -10%; left: -10%; width: 50vw; height: 50vw; background: rgba(74, 109, 124, 0.15); animation-duration: 25s; }
+        .blob-2 { bottom: -10%; right: -10%; width: 60vw; height: 60vw; background: rgba(135, 161, 173, 0.15); animation-duration: 30s; animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 40%; width: 40vw; height: 40vw; background: rgba(255, 255, 255, 0.4); animation-duration: 22s; animation-delay: -10s; }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(135, 161, 173, 0.5);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(74, 109, 124, 0.7);
+        }
+
+        /* Animations */
+        .animate-fade-in-up {
+          animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        
+        .animate-scale-in {
+            animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Glass Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px rgba(74, 109, 124, 0.05);
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px -10px rgba(74, 109, 124, 0.15);
+            border-color: rgba(255, 255, 255, 0.9);
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { 
+                background: white !important; 
+                background-image: none !important; 
+                color: #1e293b !important;
+            }
+            .bg-blobs { display: none !important; }
+            
+            #root {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .glass-panel, .glass-card { 
+                background: white !important; 
+                backdrop-filter: none !important; 
+                box-shadow: none !important; 
+                border: 1px solid #e2e8f0 !important; 
+                margin-bottom: 30px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                display: block !important;
+                position: relative !important;
+                height: auto !important;
+            }
+
+            /* Force single column in PDF to prevent horizontal overlaps */
+            .grid {
+                display: block !important;
+            }
+            
+            .grid > div {
+                width: 100% !important;
+                margin-bottom: 25px !important;
+            }
+
+            /* Preserve progress bar colors */
+            .bg-emerald-500 { background-color: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-sky-500 { background-color: #0ea5e9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-amber-500 { background-color: #f59e0b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-rose-500 { background-color: #f43f5e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-red-600 { background-color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-indigo-600 { background-color: #4f46e5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-slate-100 { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-slate-400 { background-color: #94a3b8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-\[\#4A6D7C\] { background-color: #4A6D7C !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-\[\#4A6D7C\]\/10 { background-color: rgba(74, 109, 124, 0.1) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+            .text-slate-900 { color: #0f172a !important; }
+            .text-slate-800 { color: #1e293b !important; }
+            .text-slate-600 { color: #475569 !important; }
+            .text-slate-500 { color: #64748b !important; }
+            .text-slate-400 { color: #94a3b8 !important; }
+            .text-emerald-600 { color: #059669 !important; }
+            .text-indigo-600 { color: #4f46e5 !important; }
+            .text-\[\#4A6D7C\] { color: #4A6D7C !important; }
+
+            .chart-container {
+                background: white !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 16px !important;
+                padding: 20px !important;
+                margin: 20px 0 40px 0 !important;
+                page-break-inside: avoid !important;
+            }
+
+            .chart-wrapper {
+                height: 350px !important;
+                width: 100% !important;
+                background: white !important;
+                border: 1px solid #f1f5f9 !important;
+            }
+
+            .ai-conclusion-pdf {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin-top: 40px !important;
+            }
+
+            .ai-conclusion-pdf a {
+                background: #4A6D7C !important;
+                color: white !important;
+                padding: 10px 20px !important;
+                border-radius: 8px !important;
+                text-decoration: none !important;
+                display: inline-block !important;
+                font-size: 14px !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+            }
+
+            /* Better handling of detailed answers in PDF */
+            details {
+                display: block !important;
+                margin-top: 20px !important;
+                border-top: 1px solid #eee !important;
+            }
+            details summary {
+                display: block !important;
+                padding-top: 10px !important;
+                color: #64748b !important;
+                font-weight: bold !important;
+                font-size: 12px !important;
+            }
+            details summary i {
+                display: none !important;
+            }
+            details > div {
+                display: block !important;
+                background: #f8fafc !important;
+                border: 1px solid #f1f5f9 !important;
+                margin-top: 10px !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+        }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@^19.2.4",
+        "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+        "react/": "https://esm.sh/react@^19.2.4/",
+        "recharts": "https://esm.sh/recharts@^2.12.7",
+        "@google/genai": "https://esm.sh/@google/genai@^1.39.0",
+        "vite": "https://esm.sh/vite@^7.3.1",
+        "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.3"
+      }
+    }
+    </script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="overflow-x-hidden">
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
