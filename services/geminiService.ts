@@ -55,7 +55,7 @@ export async function getSmartRecommendations(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash', 
+      model: 'gemini-2.5-flash',
       contents: `Жалобы пациента: "${symptoms}". Подобрать подходящие тесты.`,
       config: {
         systemInstruction: systemInstruction,
@@ -109,7 +109,7 @@ export async function getSelfKnowledgeRecommendations(
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-flash',
       contents: `Запрос пользователя: "${goal}". Подобрать батарею тестов.`,
       config: {
         systemInstruction: systemInstruction,
@@ -147,7 +147,7 @@ export async function getSelfKnowledgeInterpretation(results: TestResult[], user
     const ai = new GoogleGenAI({ apiKey });
     try {
         const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-2.5-pro',
             contents: `
             Роль: Эксперт по психологии личности и карьерному коучингу.
             Задача: Дать глубокую, персонализированную интерпретацию личности на основе тестов. Это НЕ медицинский диагноз, а психологический портрет.
@@ -209,7 +209,7 @@ export async function getAggregateInterpretation(results: TestResult[], userComp
   const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.5-pro',
       contents: `
       Роль: Ведущий клинический психолог центра "Диалектика". 
       Задача: Составить персонализированное заключение на основе жалоб и тестов.
