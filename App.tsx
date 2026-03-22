@@ -347,10 +347,7 @@ export default function App() {
          </div>`
       : '';
 
-    const win = window.open('', '_blank');
-    if (!win) return;
-
-    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8">
       <title>Отчёт — Клиника Диалектика</title>
       <style>
         body { font-family: Arial, sans-serif; color: #1e293b; padding: 40px; max-width: 720px; margin: 0 auto; }
@@ -382,12 +379,12 @@ export default function App() {
       ${resultsHtml}
       ${aiHtml}
       <div class="footer">Данный отчёт является предварительным и не заменяет консультацию специалиста.</div>
-    </body></html>`);
+    </body></html>`;
 
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); }, 500);
-  };
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const win = window.open(url, '_blank');
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   const handleEditAnswers = () => {
