@@ -92,6 +92,7 @@ export default function App() {
   const [aiInterpretation, setAiInterpretation] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [pressedAnswerKey, setPressedAnswerKey] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [diseaseSearch, setDiseaseSearch] = useState('');
   
@@ -321,63 +322,78 @@ export default function App() {
   };
 
   const handleDownloadPdf = async () => {
-    const originalElement = document.getElementById('printable-results');
-    if (!originalElement) return;
-    
     setIsGeneratingPdf(true);
-    
-    // Check if html2pdf is available
+
     // @ts-ignore
     if (typeof window.html2pdf === 'undefined') {
-        alert("Модуль PDF еще загружается. Попробуйте через секунду.");
-        setIsGeneratingPdf(false);
-        return;
+      alert("Модуль PDF ещё загружается. Попробуйте через секунду.");
+      setIsGeneratingPdf(false);
+      return;
     }
 
-    // Clone the element
-    const clone = originalElement.cloneNode(true) as HTMLElement;
-    clone.classList.add('pdf-mode');
-    
-    // Ensure the clone is visible for capture but off-screen
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0';
-    clone.style.display = 'block';
-    clone.style.visibility = 'visible';
-    
-    document.body.appendChild(clone);
+    const date = new Date().toLocaleDateString('ru-RU');
+
+    const resultsHtml = results.map(r => {
+      const subscalesHtml = r.subscales && r.subscales.length > 0
+        ? `<div style="margin-top:6px;padding-left:12px;border-left:3px solid #4A6D7C;">
+            ${r.subscales.map(s => `<div style="font-size:12px;color:#475569;">${s.name}: <b>${s.score}</b> / ${s.maxScore}</div>`).join('')}
+           </div>`
+        : '';
+      return `
+        <div style="margin-bottom:20px;padding:16px;border:1px solid #e2e8f0;border-radius:8px;page-break-inside:avoid;">
+          <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:4px;">${r.testName}</div>
+          <div style="font-size:13px;color:#475569;margin-bottom:4px;">${r.interpretation}</div>
+          <div style="font-size:12px;color:#64748b;">Балл: <b>${r.score}</b> | Уровень: <b>${r.severity}</b></div>
+          ${subscalesHtml}
+        </div>`;
+    }).join('');
+
+    const aiHtml = aiInterpretation
+      ? `<div style="margin-top:32px;padding-top:24px;border-top:2px solid #4A6D7C;">
+          <h2 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:16px;">AI-анализ результатов</h2>
+          <div style="font-size:13px;color:#334155;line-height:1.7;white-space:pre-wrap;">${aiInterpretation.replace(/###\s*/g, '\n').replace(/\*\*/g, '')}</div>
+         </div>`
+      : '';
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;color:#1e293b;padding:32px;max-width:700px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #4A6D7C;">
+          <div style="font-size:22px;font-weight:800;color:#4A6D7C;">Клиника Диалектика</div>
+          <div style="font-size:14px;color:#64748b;margin-top:4px;">Результаты психологического тестирования</div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">${date}</div>
+        </div>
+        <h2 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:16px;">Результаты тестов</h2>
+        ${resultsHtml}
+        ${aiHtml}
+        <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
+          Данный отчёт является предварительным и не заменяет консультацию специалиста.
+        </div>
+      </div>`;
+
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    document.body.appendChild(container);
 
     const opt = {
-      margin:       [10, 10],
-      filename:     `Dialektika_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { 
-          scale: 2, 
-          useCORS: true, 
-          logging: true, // Enable logging for debugging
-          scrollY: 0,
-          backgroundColor: '#ffffff',
-          windowWidth: 800 // Match the pdf-mode width
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: [10, 10],
+      filename: `Dialektika_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     try {
-        console.log("Starting PDF generation with clone:", clone);
-        // Longer delay to ensure browser rendering and styles application
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // @ts-ignore
-        await window.html2pdf().set(opt).from(clone).save();
-        console.log("PDF generation successful");
+      await new Promise(resolve => setTimeout(resolve, 300));
+      // @ts-ignore
+      await window.html2pdf().set(opt).from(container).save();
     } catch (err) {
-        console.error("PDF generation failed", err);
-        alert("Не удалось сгенерировать PDF файл. Попробуйте обновить страницу.");
+      console.error("PDF generation failed", err);
+      alert("Не удалось сгенерировать PDF. Попробуйте обновить страницу.");
     } finally {
-        // Clean up
-        if (document.body.contains(clone)) {
-            document.body.removeChild(clone);
-        }
-        setIsGeneratingPdf(false);
+      if (document.body.contains(container)) document.body.removeChild(container);
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -1209,16 +1225,22 @@ export default function App() {
                   <div className="space-y-3">
                     {currentQuestion.options.map((opt, idx) => {
                       const isSelected = answers[currentTest.id]?.[currentQuestion.id] === opt.score;
+                      const pressKey = `${currentTest.id}-${currentQuestion.id}-${idx}`;
+                      const isPressed = pressedAnswerKey === pressKey;
                       return (
                         <button
                           key={idx}
                           disabled={isTransitioning}
-                          onClick={() => handleAnswer(currentTest.id, currentQuestion.id, opt.score)}
-                          className={`w-full p-4 sm:p-5 text-left rounded-xl sm:rounded-2xl border sm:border-2 transition-all duration-300 flex items-center justify-between group active:scale-[0.98] relative overflow-hidden ${
-                            isSelected 
-                              ? 'border-[#4A6D7C] bg-[#4A6D7C] text-white shadow-lg shadow-[#4A6D7C]/20' 
+                          onClick={() => {
+                            setPressedAnswerKey(pressKey);
+                            setTimeout(() => setPressedAnswerKey(null), 200);
+                            handleAnswer(currentTest.id, currentQuestion.id, opt.score);
+                          }}
+                          className={`w-full p-4 sm:p-5 text-left rounded-xl sm:rounded-2xl border sm:border-2 transition-all duration-200 flex items-center justify-between group relative overflow-hidden ${
+                            isSelected
+                              ? 'border-[#4A6D7C] bg-[#4A6D7C] text-white shadow-lg shadow-[#4A6D7C]/20'
                               : 'border-white/60 bg-white/40 text-slate-700 hover:border-[#4A6D7C]/50 hover:bg-white/80 hover:shadow-md'
-                          } ${isTransitioning ? 'cursor-not-allowed opacity-80' : ''}`}
+                          } ${isTransitioning ? 'cursor-not-allowed opacity-80' : ''} ${isPressed ? 'scale-[0.98]' : 'scale-100'}`}
                         >
                           <span className="font-semibold text-sm sm:text-base relative z-10">{opt.text}</span>
                           {isSelected && <i className="fas fa-check text-white relative z-10 animate-scale-in"></i>}
