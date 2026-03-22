@@ -321,80 +321,73 @@ export default function App() {
      });
   };
 
-  const handleDownloadPdf = async () => {
-    setIsGeneratingPdf(true);
-
-    // @ts-ignore
-    if (typeof window.html2pdf === 'undefined') {
-      alert("Модуль PDF ещё загружается. Попробуйте через секунду.");
-      setIsGeneratingPdf(false);
-      return;
-    }
-
+  const handleDownloadPdf = () => {
     const date = new Date().toLocaleDateString('ru-RU');
 
     const resultsHtml = results.map(r => {
       const subscalesHtml = r.subscales && r.subscales.length > 0
-        ? `<div style="margin-top:6px;padding-left:12px;border-left:3px solid #4A6D7C;">
-            ${r.subscales.map(s => `<div style="font-size:12px;color:#475569;">${s.name}: <b>${s.score}</b> / ${s.maxScore}</div>`).join('')}
-           </div>`
+        ? `<div class="subscales">${r.subscales.map(s => `<span>${s.name}: <b>${s.score}/${s.maxScore}</b></span>`).join('')}</div>`
         : '';
       return `
-        <div style="margin-bottom:20px;padding:16px;border:1px solid #e2e8f0;border-radius:8px;page-break-inside:avoid;">
-          <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:4px;">${r.testName}</div>
-          <div style="font-size:13px;color:#475569;margin-bottom:4px;">${r.interpretation}</div>
-          <div style="font-size:12px;color:#64748b;">Балл: <b>${r.score}</b> | Уровень: <b>${r.severity}</b></div>
+        <div class="test-block">
+          <div class="test-name">${r.testName}</div>
+          <div class="test-interp">${r.interpretation}</div>
+          <div class="test-score">Балл: <b>${r.score}</b> &nbsp;|&nbsp; Уровень: <b>${r.severity}</b></div>
           ${subscalesHtml}
         </div>`;
     }).join('');
 
     const aiHtml = aiInterpretation
-      ? `<div style="margin-top:32px;padding-top:24px;border-top:2px solid #4A6D7C;">
-          <h2 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:16px;">AI-анализ результатов</h2>
-          <div style="font-size:13px;color:#334155;line-height:1.7;white-space:pre-wrap;">${aiInterpretation.replace(/###\s*/g, '\n').replace(/\*\*/g, '')}</div>
+      ? `<div class="ai-section">
+          <h2>AI-анализ результатов</h2>
+          <div class="ai-text">${aiInterpretation
+            .replace(/###\s*(.+)/g, '<h3>$1</h3>')
+            .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+            .replace(/\n/g, '<br/>')}</div>
          </div>`
       : '';
 
-    const html = `
-      <div style="font-family:Arial,sans-serif;color:#1e293b;padding:32px;max-width:700px;margin:0 auto;">
-        <div style="text-align:center;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #4A6D7C;">
-          <div style="font-size:22px;font-weight:800;color:#4A6D7C;">Клиника Диалектика</div>
-          <div style="font-size:14px;color:#64748b;margin-top:4px;">Результаты психологического тестирования</div>
-          <div style="font-size:12px;color:#94a3b8;margin-top:2px;">${date}</div>
-        </div>
-        <h2 style="font-size:18px;font-weight:700;color:#1e293b;margin-bottom:16px;">Результаты тестов</h2>
-        ${resultsHtml}
-        ${aiHtml}
-        <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;text-align:center;">
-          Данный отчёт является предварительным и не заменяет консультацию специалиста.
-        </div>
-      </div>`;
+    const win = window.open('', '_blank');
+    if (!win) return;
 
-    const container = document.createElement('div');
-    container.innerHTML = html;
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    document.body.appendChild(container);
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <title>Отчёт — Клиника Диалектика</title>
+      <style>
+        body { font-family: Arial, sans-serif; color: #1e293b; padding: 40px; max-width: 720px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid #4A6D7C; padding-bottom: 20px; margin-bottom: 28px; }
+        .clinic { font-size: 22px; font-weight: 800; color: #4A6D7C; }
+        .subtitle { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .date { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+        h2 { font-size: 16px; color: #1e293b; margin-bottom: 14px; }
+        .test-block { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; page-break-inside: avoid; }
+        .test-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .test-interp { font-size: 13px; color: #475569; margin-bottom: 4px; }
+        .test-score { font-size: 12px; color: #64748b; }
+        .subscales { margin-top: 8px; padding-left: 12px; border-left: 3px solid #4A6D7C; display: flex; flex-wrap: wrap; gap: 8px; }
+        .subscales span { font-size: 11px; color: #475569; }
+        .ai-section { margin-top: 32px; padding-top: 24px; border-top: 2px solid #4A6D7C; }
+        .ai-section h2 { color: #4A6D7C; }
+        .ai-section h3 { font-size: 14px; font-weight: 700; margin: 18px 0 6px; color: #1e293b; }
+        .ai-text { font-size: 13px; color: #334155; line-height: 1.75; }
+        .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #e2e8f0; font-size: 11px; color: #94a3b8; text-align: center; }
+        @media print { body { padding: 20px; } }
+      </style>
+    </head><body>
+      <div class="header">
+        <div class="clinic">Клиника Диалектика</div>
+        <div class="subtitle">Результаты психологического тестирования</div>
+        <div class="date">${date}</div>
+      </div>
+      <h2>Результаты тестов</h2>
+      ${resultsHtml}
+      ${aiHtml}
+      <div class="footer">Данный отчёт является предварительным и не заменяет консультацию специалиста.</div>
+    </body></html>`);
 
-    const opt = {
-      margin: [10, 10],
-      filename: `Dialektika_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      // @ts-ignore
-      await window.html2pdf().set(opt).from(container).save();
-    } catch (err) {
-      console.error("PDF generation failed", err);
-      alert("Не удалось сгенерировать PDF. Попробуйте обновить страницу.");
-    } finally {
-      if (document.body.contains(container)) document.body.removeChild(container);
-      setIsGeneratingPdf(false);
-    }
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 500);
+  };
   };
 
   const handleEditAnswers = () => {
