@@ -296,29 +296,42 @@ export default function App() {
     scrollToTop();
   };
 
+  const copyToClipboard = (url: string, successMessage: string) => {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const copied = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (copied) {
+      alert(successMessage);
+    } else {
+      prompt("Скопируйте ссылку вручную (Ctrl+C):", url);
+    }
+  };
+
   const handleShareBattery = () => {
     if (selectedTests.length === 0) return;
     const hash = encodeBattery(selectedTests);
     const url = `${window.location.origin}${window.location.pathname}?tests=${hash}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert("Ссылка на набор тестов скопирована! Отправьте её клиенту.");
-    });
+    copyToClipboard(url, "Ссылка на набор тестов скопирована! Отправьте её клиенту.");
   };
 
   const handleShareResults = () => {
      if (results.length === 0) return;
-     // Include AI interpretation in the link if available
      const hash = encodeResults(answers, selectedTests, aiInterpretation);
      const url = `${window.location.origin}${window.location.pathname}?report=${hash}`;
-     
-     // Check URL length safety
+
      if (url.length > 2000) {
          alert("Внимание: Ссылка получилась слишком длинной и может не открыться в некоторых мессенджерах. Рекомендуется использовать PDF.");
      }
-     
-     navigator.clipboard.writeText(url).then(() => {
-        alert("Ссылка на результат скопирована! Отправьте её своему специалисту.");
-     });
+
+     copyToClipboard(url, "Ссылка на результат скопирована! Отправьте её своему специалисту.");
   };
 
   const handleDownloadPdf = () => {
@@ -1532,8 +1545,7 @@ export default function App() {
                 <button
                   onClick={() => {
                     const text = `Результаты диагностики Клиника Диалектика:\n\n${results.map(r => `${r.testName}: ${r.interpretation}`).join('\n')}\n\n${aiInterpretation ? `Рекомендации:\n${aiInterpretation}` : ''}`;
-                    navigator.clipboard.writeText(text);
-                    alert('Результаты скопированы в буфер обмена!');
+                    copyToClipboard(text, 'Результаты скопированы в буфер обмена!');
                   }}
                   className="py-4 rounded-xl border border-white/60 bg-white/40 backdrop-blur-sm text-slate-600 font-bold hover:bg-white/80 transition-all text-sm shadow-sm hover:shadow-md"
                 >
