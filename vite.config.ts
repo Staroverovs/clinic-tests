@@ -1,9 +1,10 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [tailwindcss(), react()],
   define: {
     'process.env': JSON.stringify({
       GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
