@@ -195,8 +195,44 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const batteryHash = params.get('tests');
     const reportHash = params.get('report');
+    const dbId = params.get('r');
 
-    if (reportHash) {
+    if (dbId) {
+        // Mode: Load from DB by short ID
+        setIsLoading(true);
+        setLoadingText("Загрузка результатов...");
+        import('./services/dbService').then(({ loadResults }) => {
+            loadResults(dbId).then(data => {
+                if (data && data.test_ids && data.scores) {
+                    const validTestIds = (data.test_ids as string[]).filter(id => TESTS.some(t => t.id === id));
+                    const scores = data.scores as Record<string, { score: number; interpretation: string }>;
+                    const severities = (data.severities || {}) as Record<string, string>;
+
+                    const reconstructedAnswers: UserAnswers = {};
+                    const reconstructedResults: TestResult[] = validTestIds.map(testId => ({
+                        testId,
+                        testName: TESTS.find(t => t.id === testId)?.name || testId,
+                        score: scores[testId]?.score ?? 0,
+                        interpretation: scores[testId]?.interpretation ?? '',
+                        severity: (severities[testId] as any) ?? 'normal',
+                    }));
+
+                    setSelectedTests(validTestIds);
+                    setAnswers(reconstructedAnswers);
+                    setResults(reconstructedResults);
+                    if (data.ai_interpretation) {
+                        setAiInterpretation(data.ai_interpretation);
+                    }
+                    setIsSharedView(true);
+                    setStep('results');
+                    setSharedMessage("Режим просмотра результатов (Только чтение)");
+                } else {
+                    alert("Ссылка недействительна или результаты не найдены.");
+                }
+                setIsLoading(false);
+            });
+        });
+    } else if (reportHash) {
         // Mode: View Result (Therapist viewing client result)
         setIsLoading(true);
         setLoadingText("Загрузка результатов пациента...");
