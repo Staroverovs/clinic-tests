@@ -3,6 +3,7 @@ import { TESTS, CATEGORY_LABELS, DISEASES } from './constants';
 import { TestDefinition, UserAnswers, TestResult, Disease } from './types';
 import { getSmartRecommendations, getSelfKnowledgeRecommendations, getSelfKnowledgeInterpretation, getAggregateInterpretation, DiagnosticDepth } from './services/geminiService';
 import { encodeBattery, decodeBattery, encodeResults, decodeResults } from './services/shareService';
+import { saveResults } from './services/dbService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type AppStep = 'welcome' | 'selection' | 'self_knowledge_selection' | 'testing' | 'results' | 'diseases' | 'faq';
@@ -94,6 +95,8 @@ export default function App() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pressedAnswerKey, setPressedAnswerKey] = useState<string | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSavingToDb, setIsSavingToDb] = useState(false);
+  const [savedLink, setSavedLink] = useState<string | null>(null);
   const [diseaseSearch, setDiseaseSearch] = useState('');
   
   // AI Key Management
@@ -332,6 +335,33 @@ export default function App() {
      }
 
      copyToClipboard(url, "Ссылка на результат скопирована! Отправьте её своему специалисту.");
+  };
+
+  const handleSaveToDb = async () => {
+    if (results.length === 0) return;
+    setIsSavingToDb(true);
+    setSavedLink(null);
+    try {
+      const scores: Record<string, { score: number; interpretation: string }> = {};
+      const severities: Record<string, string> = {};
+      results.forEach(r => {
+        scores[r.testId] = { score: r.score, interpretation: r.interpretation };
+        severities[r.testId] = r.severity;
+      });
+      const id = await saveResults({
+        test_ids: selectedTests,
+        scores,
+        ai_interpretation: aiInterpretation,
+        severities,
+      });
+      const link = `${window.location.origin}${window.location.pathname}?r=${id}`;
+      setSavedLink(link);
+      copyToClipboard(link, 'Ссылка сохранена и скопирована!');
+    } catch (e) {
+      alert('Ошибка сохранения. Попробуйте ещё раз.');
+    } finally {
+      setIsSavingToDb(false);
+    }
   };
 
   const handleDownloadPdf = () => {
@@ -1534,6 +1564,23 @@ export default function App() {
                     </button>
                 )}
                 
+                {/* Save to DB and get short link */}
+                <button
+                  onClick={handleSaveToDb}
+                  disabled={isSavingToDb}
+                  className="py-4 rounded-xl border border-[#4A6D7C]/30 bg-[#4A6D7C]/10 backdrop-blur-sm text-[#4A6D7C] font-bold hover:bg-[#4A6D7C]/20 transition-all text-sm shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSavingToDb
+                    ? <><i className="fas fa-spinner fa-spin mr-2"></i> Сохранение...</>
+                    : <><i className="fas fa-link mr-2"></i> Сохранить и получить ссылку</>
+                  }
+                </button>
+                {savedLink && (
+                  <div className="col-span-full text-xs text-center text-[#4A6D7C] bg-[#4A6D7C]/5 rounded-xl py-2 px-4 break-all">
+                    <i className="fas fa-check-circle mr-1"></i> {savedLink}
+                  </div>
+                )}
+
                 {/* Share Result Link Button (Client -> Therapist) */}
                 <button
                   onClick={handleShareResults}
