@@ -1617,13 +1617,6 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Share Result Link Button (Client -> Therapist) */}
-                <button
-                  onClick={handleShareResults}
-                  className="py-4 rounded-xl border border-[#4A6D7C]/30 bg-[#4A6D7C]/10 backdrop-blur-sm text-[#4A6D7C] font-bold hover:bg-[#4A6D7C]/20 transition-all text-sm shadow-sm hover:shadow-md"
-                >
-                  <i className="fas fa-share-square mr-2"></i> Ссылка на результат
-                </button>
 
                 <button
                   onClick={() => {
