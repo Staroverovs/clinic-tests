@@ -6,11 +6,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   define: {
-    'process.env': JSON.stringify({
-      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
-      API_KEY: process.env.API_KEY || '',
-      NODE_ENV: process.env.NODE_ENV || 'production',
-    }),
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY || ''),
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
   },
   server: {
     host: '0.0.0.0',
