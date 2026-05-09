@@ -893,6 +893,147 @@ export const TESTS: TestDefinition[] = [
         details: `Балл: ${total} (Диапазон 10-40)`
       };
     }
+  },
+
+  // --- IRI: Межличностный индекс реактивности (М. Дэвис) ---
+  {
+    id: 'iri',
+    name: 'IRI (Эмпатия)',
+    fullName: 'Межличностный индекс реактивности Дэвиса',
+    author: 'M. H. Davis',
+    category: 'self_knowledge',
+    description: 'Насколько вы способны чувствовать других? Многомерный тест эмпатии: от умения понять чужую точку зрения до сострадания и личного дискомфорта.',
+    instructions: 'Оцените, насколько каждое утверждение описывает вас. (0 — совсем не про меня, 4 — очень точно про меня)',
+    questions: [
+      { id: 1,  text: "Я часто мечтаю и фантазирую о персонажах книг и фильмов.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 2,  text: "Меня беспокоит судьба тех, кому не везёт.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 3,  text: "Иногда мне сложно увидеть ситуацию с точки зрения другого человека.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 4,  text: "Иногда я не особо сочувствую людям в трудных ситуациях.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 5,  text: "Я по-настоящему увлекаюсь интересными историями и фильмами.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 6,  text: "В напряжённых ситуациях я чувствую страх и тревогу.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 7,  text: "Обычно я объективен и не позволяю эмоциям руководить мной.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 8,  text: "Я стараюсь учитывать точку зрения всех сторон перед тем, как принять решение.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 9,  text: "Когда я вижу, как кто-то пользуется доверием других, мне хочется защитить жертву.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 10, text: "Я иногда чувствую беспомощность, когда нахожусь в очень эмоциональной ситуации.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 11, text: "Иногда я пытаюсь лучше понять друзей, представляя, как они видят ситуацию.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 12, text: "Книги, которые я читаю, редко по-настоящему меня захватывают.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 13, text: "Когда кто-то расстроен, мне обычно легко понять, что он чувствует.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 14, text: "Я не очень сочувствую другим людям.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 15, text: "Если я уверен в своей правоте, мне трудно слушать доводы другой стороны.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 16, text: "Смотря фильм, я легко ставлю себя на место персонажа.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 17, text: "Я теряюсь в напряжённых эмоциональных ситуациях.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 18, text: "Когда я вижу, что с кем-то несправедливо обращаются, я испытываю мало жалости к нему.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 19, text: "Обычно я хорошо справляюсь с кризисными ситуациями.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 20, text: "Меня глубоко трогают чувства героев романов.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 21, text: "В спорах я стараюсь смотреть на ситуацию глазами оппонента.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 22, text: "Я считаю себя добросердечным человеком.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 23, text: "Когда я смотрю хороший фильм, я легко представляю себя на месте главного героя.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 24, text: "В экстренных ситуациях я теряю самообладание.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 25, text: "Когда я в чём-то не уверен, я смотрю на ситуацию с разных точек зрения.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 26, text: "Персонажи книг не производят на меня особого эмоционального впечатления.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 27, text: "Когда я вижу, что кто-то нуждается в срочной помощи, я теряюсь.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+      { id: 28, text: "Прежде чем осудить кого-то, я стараюсь представить себя на его месте.", options: [{text:"0 — совсем не про меня",score:0},{text:"1",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — очень точно",score:4}] },
+    ],
+    interpretation: (answers) => {
+      // Subscales (items, some reversed marked with R):
+      // PT (Perspective Taking): 3R,8,11,15R,21,25,28
+      // FS (Fantasy):            1,5,7R,12R,16,20,23,26R
+      // EC (Empathic Concern):   2,4R,9,13,14R,18R,22
+      // PD (Personal Distress):  6,10,17,19R,24,27
+      const rev = (id: number) => 4 - (answers[id] ?? 0);
+      const get = (id: number) => answers[id] ?? 0;
+
+      const pt = rev(3) + get(8) + get(11) + rev(15) + get(21) + get(25) + get(28);
+      const fs = get(1) + get(5) + rev(7) + rev(12) + get(16) + get(20) + get(23) + rev(26);
+      const ec = get(2) + rev(4) + get(9) + get(13) + rev(14) + rev(18) + get(22);
+      const pd = get(6) + get(10) + get(17) + rev(19) + get(24) + get(27);
+
+      const total = pt + ec; // Просоциальная эмпатия
+      let label = 'Средний уровень эмпатии';
+      let sev: any = 'normal';
+      if (total < 16) { label = 'Низкий уровень эмпатии'; sev = 'mild'; }
+      else if (total > 28) { label = 'Высокий уровень эмпатии'; sev = 'normal'; }
+
+      return {
+        label,
+        description: 'Многомерная оценка эмпатии по четырём шкалам.',
+        severity: sev,
+        details: `Общий просоциальный балл: ${total}`,
+        subscales: [
+          { name: 'Принятие перспективы (PT)', score: pt, maxScore: 28, severity: pt < 10 ? 'низко' : pt > 20 ? 'высоко' : 'норма' },
+          { name: 'Воображение (FS)', score: fs, maxScore: 32, severity: fs < 12 ? 'низко' : fs > 24 ? 'высоко' : 'норма' },
+          { name: 'Эмпатическая забота (EC)', score: ec, maxScore: 28, severity: ec < 10 ? 'низко' : ec > 20 ? 'высоко' : 'норма' },
+          { name: 'Личный дистресс (PD)', score: pd, maxScore: 24, severity: pd > 14 ? 'высоко (тревожно)' : 'норма' },
+        ]
+      };
+    }
+  },
+
+  // --- QCAE: Опросник когнитивной и аффективной эмпатии (Reniers et al.) ---
+  {
+    id: 'qcae',
+    name: 'QCAE (Эмпатия)',
+    fullName: 'Опросник когнитивной и аффективной эмпатии',
+    author: 'Reniers, Corcoran, Drake, Shryane & Völlm',
+    category: 'self_knowledge',
+    description: 'Умеете ли вы понимать чужие мысли — или только разделять чужие чувства? Тест разделяет два типа эмпатии: когнитивную (понимание) и аффективную (переживание).',
+    instructions: 'Оцените, насколько каждое утверждение описывает вас. (1 — совсем не согласен, 4 — полностью согласен)',
+    questions: [
+      { id: 1,  text: "Я могу легко рассказать, что чувствует другой человек по выражению его лица.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 2,  text: "Я нахожу чужие социальные ситуации лёгкими для понимания.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 3,  text: "Мне нравится разбираться, что движет людьми.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 4,  text: "У меня редко возникают трудности с тем, чтобы рассказать другу, что я думаю о его проблеме.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 5,  text: "Я умею предвидеть, как другой человек отреагирует на ситуацию.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 6,  text: "Я замечаю, когда другим людям некомфортно или неловко.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 7,  text: "Когда кто-то говорит мне о чём-то важном, я стараюсь понять его точку зрения.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 8,  text: "Мне легко ставить себя на место другого человека.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 9,  text: "Я хорошо понимаю, почему люди реагируют так, как они реагируют.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 10, text: "Я легко нахожу нужные слова для утешения расстроенного друга.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 11, text: "Я быстро улавливаю, когда кто-то начинает раздражаться.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 12, text: "Мне легко понять, когда другие чувствуют себя обиженными.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 13, text: "Я хорошо понимаю скрытые мотивы чужих поступков.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 14, text: "Мне легко видеть вещи с точки зрения других людей.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 15, text: "Чужая боль глубоко трогает меня.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 16, text: "Мне не всё равно, что чувствуют другие люди.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 17, text: "Когда кто-то рядом со мной расстроен, я тоже начинаю расстраиваться.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 18, text: "Я легко заражаюсь чужими эмоциями.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 19, text: "Я нахожу, что переживаю вместе с персонажами фильмов.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 20, text: "Чужое горе меня глубоко трогает.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 21, text: "Я замечаю, что перехватываю настроение людей, которые меня окружают.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 22, text: "Когда кто-то рядом нервничает, я тоже начинаю нервничать.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 23, text: "Я чувствую тепло к людям, которые важны для меня.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 24, text: "Мне важно, что происходит с людьми, которых я знаю.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 25, text: "Меня трогают истории о людях в трудных ситуациях.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 26, text: "Когда близкий мне человек расстроен, я чувствую желание ему помочь.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 27, text: "Я чувствую, что мне важны переживания других людей.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 28, text: "Я легко нахожу общий язык с людьми, которых только что встретил.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 29, text: "Мне нравится узнавать, что другие думают о ситуациях.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 30, text: "Я легко чувствую, как другой человек воспринимает разговор.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+      { id: 31, text: "Я достаточно хорошо понимаю людей.", options: [{text:"1 — не согласен",score:1},{text:"2",score:2},{text:"3",score:3},{text:"4 — согласен",score:4}] },
+    ],
+    interpretation: (answers) => {
+      // Cognitive empathy: items 1–14 (Perspective Taking + Online Simulation)
+      // Affective empathy: items 15–31 (Emotion Contagion + Proximal/Peripheral Responsivity)
+      const cog = [1,2,3,4,5,6,7,8,9,10,11,12,13,14].reduce((s,i) => s + (answers[i] ?? 0), 0);
+      const aff = [15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31].reduce((s,i) => s + (answers[i] ?? 0), 0);
+      const total = cog + aff;
+
+      let label = 'Средний уровень эмпатии';
+      let sev: any = 'normal';
+      if (total < 65) { label = 'Низкий уровень эмпатии'; sev = 'mild'; }
+      else if (total > 95) { label = 'Высокий уровень эмпатии'; }
+
+      return {
+        label,
+        description: 'Когнитивная и аффективная составляющие эмпатии.',
+        severity: sev,
+        details: `Общий балл: ${total}/124`,
+        subscales: [
+          { name: 'Когнитивная эмпатия (понимание)', score: cog, maxScore: 56, severity: cog < 28 ? 'ниже среднего' : cog > 46 ? 'выше среднего' : 'средний' },
+          { name: 'Аффективная эмпатия (переживание)', score: aff, maxScore: 68, severity: aff < 34 ? 'ниже среднего' : aff > 56 ? 'выше среднего' : 'средний' },
+        ]
+      };
+    }
   }
 ];
 
