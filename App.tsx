@@ -115,6 +115,9 @@ export default function App() {
   const [adminPass, setAdminPass] = useState('');
   const [adminLoginError, setAdminLoginError] = useState('');
 
+  // Track how the user entered the diagnostic flow
+  const [entryPoint, setEntryPoint] = useState<'smart' | 'manual' | 'lab' | ''>('');
+
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTestId = selectedTests[currentTestIndex];
   const currentTest = currentTestId ? TESTS.find(t => t.id === currentTestId) : null;
@@ -410,6 +413,10 @@ export default function App() {
         scores,
         ai_interpretation: aiInterpretation,
         severities,
+        complaints: complaints || undefined,
+        self_goal: selfGoal || undefined,
+        referrer: document.referrer || undefined,
+        entry_point: entryPoint || undefined,
       });
       const link = `${window.location.origin}${window.location.pathname}?r=${id}`;
       setSavedLink(link);
@@ -499,6 +506,7 @@ export default function App() {
 
   const handleStartSmart = async () => {
     if (!complaints.trim()) return;
+    setEntryPoint('smart');
     setIsLoading(true);
     setLoadingText("Анализируем клиническую картину...");
     try {
@@ -898,7 +906,7 @@ export default function App() {
                        Выбор конкретных клинических методик (PHQ-9, HADS, BDI-II, и др.).
                      </p>
                      <button 
-                      onClick={() => { setStep('selection'); scrollToTop(); }} 
+                      onClick={() => { setEntryPoint('manual'); setStep('selection'); scrollToTop(); }}
                       className="mt-auto w-full py-3 rounded-xl border border-slate-300/50 bg-white/50 text-slate-600 font-bold hover:bg-white hover:text-slate-800 transition-all text-xs shadow-sm active:scale-[0.98]"
                     >
                       Открыть список
@@ -916,7 +924,7 @@ export default function App() {
                        Глубинные тесты личности, характера и темперамента (Big5, 16PF, и др.).
                      </p>
                      <button 
-                      onClick={() => { setStep('self_knowledge_selection'); scrollToTop(); }} 
+                      onClick={() => { setEntryPoint('lab'); setStep('self_knowledge_selection'); scrollToTop(); }}
                       className="mt-auto w-full py-3 rounded-xl bg-white text-indigo-700 font-bold hover:bg-indigo-50 transition-all text-xs shadow-lg active:scale-[0.98]"
                     >
                       Перейти в лабораторию
@@ -1799,10 +1807,12 @@ export default function App() {
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-slate-200">
-                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Дата</th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4 whitespace-nowrap">Дата</th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Запрос / Цель</th>
                             <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Тесты</th>
-                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Уровень</th>
-                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3"></th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Результат</th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Источник</th>
+                            <th className="pb-3"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1813,26 +1823,50 @@ export default function App() {
                               mild: 'bg-yellow-100 text-yellow-700',
                               normal: 'bg-green-100 text-green-700',
                             };
+                            const entryLabels: Record<string, string> = {
+                              smart: '🤖 ИИ-подбор',
+                              manual: '📋 Каталог',
+                              lab: '🔬 Лаборатория Я',
+                            };
                             const date = new Date(row.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+                            const requestText = row.complaints || row.self_goal || '—';
+                            const refDomain = (() => {
+                              try { return row.referrer ? new URL(row.referrer).hostname.replace('www.', '') : '—'; }
+                              catch { return row.referrer || '—'; }
+                            })();
+                            const worstSev = Object.values(row.severities || {}).includes('severe') ? 'severe'
+                              : Object.values(row.severities || {}).includes('moderate') ? 'moderate'
+                              : Object.values(row.severities || {}).includes('mild') ? 'mild' : 'normal';
+                            const sevLabel: Record<string, string> = { severe: 'Тяжело', moderate: 'Умеренно', mild: 'Легко', normal: 'Норма' };
                             return (
-                              <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                                <td className="py-3 pr-4 text-slate-500 whitespace-nowrap">{date}</td>
+                              <tr key={row.id} className="hover:bg-slate-50/80 transition-colors align-top">
+                                <td className="py-3 pr-4 text-slate-500 whitespace-nowrap text-xs">{date}</td>
+                                <td className="py-3 pr-4 max-w-[200px]">
+                                  {row.entry_point && (
+                                    <div className="text-[10px] text-slate-400 mb-1">{entryLabels[row.entry_point] || row.entry_point}</div>
+                                  )}
+                                  <p className="text-slate-700 text-xs leading-relaxed line-clamp-3">{requestText}</p>
+                                </td>
                                 <td className="py-3 pr-4">
                                   <div className="flex flex-wrap gap-1">
                                     {(row.test_ids || []).map(tid => (
-                                      <span key={tid} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-medium">{TESTS.find(t => t.id === tid)?.name || tid}</span>
+                                      <span key={tid} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-medium whitespace-nowrap">{TESTS.find(t => t.id === tid)?.name || tid}</span>
                                     ))}
                                   </div>
                                 </td>
                                 <td className="py-3 pr-4">
-                                  <div className="flex flex-wrap gap-1">
-                                    {Object.entries(row.severities || {}).map(([tid, sev]) => (
-                                      <span key={tid} className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${sevColors[sev] || sevColors.normal}`}>
-                                        {TESTS.find(t => t.id === tid)?.name || tid}: {sev}
+                                  <span className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${sevColors[worstSev]}`}>
+                                    {sevLabel[worstSev]}
+                                  </span>
+                                  <div className="flex flex-wrap gap-1 mt-1.5">
+                                    {Object.entries(row.severities || {}).filter(([, s]) => s !== 'normal').map(([tid, sev]) => (
+                                      <span key={tid} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${sevColors[sev] || sevColors.normal}`}>
+                                        {TESTS.find(t => t.id === tid)?.name || tid}
                                       </span>
                                     ))}
                                   </div>
                                 </td>
+                                <td className="py-3 pr-4 text-xs text-slate-400 whitespace-nowrap">{refDomain}</td>
                                 <td className="py-3 text-right">
                                   <a
                                     href={`${window.location.origin}${window.location.pathname}?r=${row.id}`}

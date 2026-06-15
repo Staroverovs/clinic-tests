@@ -37,15 +37,19 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = substr(str_shuffle('abcdefghijklmnopqrstuvwxyz0123456789'), 0, 8);
 
     $stmt = $pdo->prepare(
-        'INSERT INTO results (id, test_ids, scores, ai_interpretation, severities)
-         VALUES (:id, :test_ids, :scores, :ai, :severities)'
+        'INSERT INTO results (id, test_ids, scores, ai_interpretation, severities, complaints, self_goal, referrer, entry_point)
+         VALUES (:id, :test_ids, :scores, :ai, :severities, :complaints, :self_goal, :referrer, :entry_point)'
     );
     $stmt->execute([
-        ':id'         => $id,
-        ':test_ids'   => json_encode($data['test_ids']),
-        ':scores'     => json_encode($data['scores']),
-        ':ai'         => $data['ai_interpretation'] ?? null,
-        ':severities' => json_encode($data['severities'] ?? []),
+        ':id'          => $id,
+        ':test_ids'    => json_encode($data['test_ids']),
+        ':scores'      => json_encode($data['scores']),
+        ':ai'          => $data['ai_interpretation'] ?? null,
+        ':severities'  => json_encode($data['severities'] ?? []),
+        ':complaints'  => $data['complaints'] ?? null,
+        ':self_goal'   => $data['self_goal'] ?? null,
+        ':referrer'    => $data['referrer'] ?? null,
+        ':entry_point' => $data['entry_point'] ?? null,
     ]);
 
     echo json_encode(['id' => $id]);
@@ -75,7 +79,7 @@ if ($action === 'get' && isset($_GET['id'])) {
 // Список всех результатов для дашборда
 if ($action === 'list') {
     $stmt = $pdo->query(
-        'SELECT id, created_at, test_ids, severities FROM results ORDER BY created_at DESC LIMIT 200'
+        'SELECT id, created_at, test_ids, severities, complaints, self_goal, referrer, entry_point FROM results ORDER BY created_at DESC LIMIT 200'
     );
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$row) {

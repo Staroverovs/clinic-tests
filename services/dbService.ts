@@ -1,17 +1,25 @@
 const API_URL = 'https://cnpp.ru/api.php';
 
-export interface ResultSummary {
-  id: string;
-  created_at: string;
-  test_ids: string[];
-  severities: Record<string, string>;
-}
-
 export interface SaveResultsPayload {
   test_ids: string[];
   scores: Record<string, { score: number; interpretation: string }>;
   ai_interpretation?: string;
   severities: Record<string, string>;
+  complaints?: string;
+  self_goal?: string;
+  referrer?: string;
+  entry_point?: string;
+}
+
+export interface ResultSummary {
+  id: string;
+  created_at: string;
+  test_ids: string[];
+  severities: Record<string, string>;
+  complaints?: string;
+  self_goal?: string;
+  referrer?: string;
+  entry_point?: string;
 }
 
 export async function saveResults(payload: SaveResultsPayload): Promise<string> {
