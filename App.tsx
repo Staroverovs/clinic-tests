@@ -110,6 +110,10 @@ export default function App() {
   // Admin dashboard state
   const [adminData, setAdminData] = useState<ResultSummary[]>([]);
   const [isAdminLoading, setIsAdminLoading] = useState(false);
+  const [isAdminAuthed, setIsAdminAuthed] = useState(() => sessionStorage.getItem('admin_auth') === '1');
+  const [adminUser, setAdminUser] = useState('');
+  const [adminPass, setAdminPass] = useState('');
+  const [adminLoginError, setAdminLoginError] = useState('');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTestId = selectedTests[currentTestIndex];
@@ -203,14 +207,16 @@ export default function App() {
 
     if (params.get('admin') === 'true') {
         setStep('admin');
-        setIsAdminLoading(true);
-        listResults().then(data => {
-            setAdminData(data);
-        }).catch(() => {
-            alert('Не удалось загрузить данные дашборда.');
-        }).finally(() => {
-            setIsAdminLoading(false);
-        });
+        if (sessionStorage.getItem('admin_auth') === '1') {
+            setIsAdminLoading(true);
+            listResults().then(data => {
+                setAdminData(data);
+            }).catch(() => {
+                alert('Не удалось загрузить данные дашборда.');
+            }).finally(() => {
+                setIsAdminLoading(false);
+            });
+        }
     } else if (dbId) {
         // Mode: Load from DB by short ID
         setIsLoading(true);
@@ -1685,98 +1691,167 @@ export default function App() {
 
           {step === 'admin' && (
             <div className="animate-fade-in-up max-w-5xl mx-auto w-full space-y-6">
-              <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-2xl font-extrabold text-slate-900">Дашборд</h2>
-                    <p className="text-slate-500 text-sm mt-1">Сохранённые результаты диагностики</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        setIsAdminLoading(true);
-                        listResults().then(setAdminData).catch(() => alert('Ошибка обновления')).finally(() => setIsAdminLoading(false));
+              {!isAdminAuthed ? (
+                /* ── Login Form ── */
+                <div className="max-w-sm mx-auto mt-16">
+                  <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/60 shadow-xl text-center">
+                    <div className="w-14 h-14 bg-[#4A6D7C]/10 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                      <i className="fas fa-lock text-[#4A6D7C] text-xl"></i>
+                    </div>
+                    <h2 className="text-xl font-extrabold text-slate-900 mb-1">Вход в дашборд</h2>
+                    <p className="text-slate-500 text-sm mb-6">Доступ только для администратора</p>
+                    <form
+                      onSubmit={e => {
+                        e.preventDefault();
+                        if (adminUser === 'Master' && adminPass === 'Dialectica2026!') {
+                          sessionStorage.setItem('admin_auth', '1');
+                          setIsAdminAuthed(true);
+                          setAdminLoginError('');
+                          setIsAdminLoading(true);
+                          listResults().then(setAdminData).catch(() => alert('Не удалось загрузить данные.')).finally(() => setIsAdminLoading(false));
+                        } else {
+                          setAdminLoginError('Неверный логин или пароль');
+                          setAdminPass('');
+                        }
                       }}
-                      disabled={isAdminLoading}
-                      className="px-4 py-2 bg-[#4A6D7C]/10 text-[#4A6D7C] rounded-xl font-semibold text-sm hover:bg-[#4A6D7C]/20 transition-all disabled:opacity-50"
+                      className="space-y-3 text-left"
                     >
-                      <i className={`fas fa-rotate-right mr-1.5 ${isAdminLoading ? 'fa-spin' : ''}`}></i>
-                      Обновить
-                    </button>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Логин</label>
+                        <input
+                          type="text"
+                          value={adminUser}
+                          onChange={e => setAdminUser(e.target.value)}
+                          autoComplete="username"
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-[#4A6D7C] focus:ring-2 focus:ring-[#4A6D7C]/20 transition-all"
+                          placeholder="Master"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">Пароль</label>
+                        <input
+                          type="password"
+                          value={adminPass}
+                          onChange={e => setAdminPass(e.target.value)}
+                          autoComplete="current-password"
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-[#4A6D7C] focus:ring-2 focus:ring-[#4A6D7C]/20 transition-all"
+                          placeholder="••••••••••"
+                        />
+                      </div>
+                      {adminLoginError && (
+                        <p className="text-red-500 text-xs font-medium">{adminLoginError}</p>
+                      )}
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-[#4A6D7C] text-white font-bold rounded-xl hover:bg-[#2E4857] transition-colors shadow-lg mt-1"
+                      >
+                        Войти
+                      </button>
+                    </form>
                   </div>
                 </div>
+              ) : (
+                /* ── Dashboard ── */
+                <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-sm">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-2xl font-extrabold text-slate-900">Дашборд</h2>
+                      <p className="text-slate-500 text-sm mt-1">Сохранённые результаты диагностики</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setIsAdminLoading(true);
+                          listResults().then(setAdminData).catch(() => alert('Ошибка обновления')).finally(() => setIsAdminLoading(false));
+                        }}
+                        disabled={isAdminLoading}
+                        className="px-4 py-2 bg-[#4A6D7C]/10 text-[#4A6D7C] rounded-xl font-semibold text-sm hover:bg-[#4A6D7C]/20 transition-all disabled:opacity-50"
+                      >
+                        <i className={`fas fa-rotate-right mr-1.5 ${isAdminLoading ? 'fa-spin' : ''}`}></i>
+                        Обновить
+                      </button>
+                      <button
+                        onClick={() => { sessionStorage.removeItem('admin_auth'); setIsAdminAuthed(false); setAdminData([]); }}
+                        className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-semibold text-sm hover:bg-slate-200 transition-all"
+                      >
+                        <i className="fas fa-sign-out-alt mr-1.5"></i>
+                        Выйти
+                      </button>
+                    </div>
+                  </div>
 
-                {isAdminLoading ? (
-                  <div className="text-center py-16 text-slate-400">
-                    <i className="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
-                    <p className="text-sm">Загрузка данных...</p>
-                  </div>
-                ) : adminData.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400">
-                    <i className="fas fa-inbox text-3xl mb-3"></i>
-                    <p className="text-sm">Нет сохранённых результатов</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <div className="text-xs text-slate-400 mb-3">{adminData.length} записей</div>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-200">
-                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Дата</th>
-                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Тесты</th>
-                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Уровень</th>
-                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {adminData.map(row => {
-                          const sevColors: Record<string, string> = {
-                            severe: 'bg-red-100 text-red-700',
-                            moderate: 'bg-orange-100 text-orange-700',
-                            mild: 'bg-yellow-100 text-yellow-700',
-                            normal: 'bg-green-100 text-green-700',
-                          };
-                          const hasSevere = Object.values(row.severities || {}).some(s => s === 'severe');
-                          const hasModerate = !hasSevere && Object.values(row.severities || {}).some(s => s === 'moderate');
-                          const worstSev = hasSevere ? 'severe' : hasModerate ? 'moderate' : 'normal';
-                          const date = new Date(row.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-                          return (
-                            <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="py-3 pr-4 text-slate-500 whitespace-nowrap">{date}</td>
-                              <td className="py-3 pr-4">
-                                <div className="flex flex-wrap gap-1">
-                                  {(row.test_ids || []).map(tid => (
-                                    <span key={tid} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-medium">{TESTS.find(t => t.id === tid)?.name || tid}</span>
-                                  ))}
-                                </div>
-                              </td>
-                              <td className="py-3 pr-4">
-                                <div className="flex flex-wrap gap-1">
-                                  {Object.entries(row.severities || {}).map(([tid, sev]) => (
-                                    <span key={tid} className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${sevColors[sev] || sevColors.normal}`}>
-                                      {TESTS.find(t => t.id === tid)?.name || tid}: {sev}
-                                    </span>
-                                  ))}
-                                </div>
-                              </td>
-                              <td className="py-3 text-right">
-                                <a
-                                  href={`${window.location.origin}${window.location.pathname}?r=${row.id}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-3 py-1.5 bg-[#4A6D7C] text-white rounded-lg text-xs font-semibold hover:bg-[#2E4857] transition-colors whitespace-nowrap"
-                                >
-                                  Открыть
-                                </a>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
+                  {isAdminLoading ? (
+                    <div className="text-center py-16 text-slate-400">
+                      <i className="fas fa-circle-notch fa-spin text-3xl mb-3 block"></i>
+                      <p className="text-sm">Загрузка данных...</p>
+                    </div>
+                  ) : adminData.length === 0 ? (
+                    <div className="text-center py-16 text-slate-400">
+                      <i className="fas fa-inbox text-3xl mb-3 block"></i>
+                      <p className="text-sm">Нет сохранённых результатов</p>
+                      <p className="text-xs mt-1 text-slate-300">Убедитесь, что api.php на сервере обновлён</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <div className="text-xs text-slate-400 mb-3">{adminData.length} записей</div>
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-slate-200">
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Дата</th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Тесты</th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Уровень</th>
+                            <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {adminData.map(row => {
+                            const sevColors: Record<string, string> = {
+                              severe: 'bg-red-100 text-red-700',
+                              moderate: 'bg-orange-100 text-orange-700',
+                              mild: 'bg-yellow-100 text-yellow-700',
+                              normal: 'bg-green-100 text-green-700',
+                            };
+                            const date = new Date(row.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+                            return (
+                              <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="py-3 pr-4 text-slate-500 whitespace-nowrap">{date}</td>
+                                <td className="py-3 pr-4">
+                                  <div className="flex flex-wrap gap-1">
+                                    {(row.test_ids || []).map(tid => (
+                                      <span key={tid} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-medium">{TESTS.find(t => t.id === tid)?.name || tid}</span>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="py-3 pr-4">
+                                  <div className="flex flex-wrap gap-1">
+                                    {Object.entries(row.severities || {}).map(([tid, sev]) => (
+                                      <span key={tid} className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${sevColors[sev] || sevColors.normal}`}>
+                                        {TESTS.find(t => t.id === tid)?.name || tid}: {sev}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="py-3 text-right">
+                                  <a
+                                    href={`${window.location.origin}${window.location.pathname}?r=${row.id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-3 py-1.5 bg-[#4A6D7C] text-white rounded-lg text-xs font-semibold hover:bg-[#2E4857] transition-colors whitespace-nowrap"
+                                  >
+                                    Открыть
+                                  </a>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
