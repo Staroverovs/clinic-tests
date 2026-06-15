@@ -3,10 +3,10 @@ import { TESTS, CATEGORY_LABELS, DISEASES } from './constants';
 import { TestDefinition, UserAnswers, TestResult, Disease } from './types';
 import { getSmartRecommendations, getSelfKnowledgeRecommendations, getSelfKnowledgeInterpretation, getAggregateInterpretation, DiagnosticDepth } from './services/geminiService';
 import { encodeBattery, decodeBattery, encodeResults, decodeResults } from './services/shareService';
-import { saveResults } from './services/dbService';
+import { saveResults, loadResults, listResults, ResultSummary } from './services/dbService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-type AppStep = 'welcome' | 'selection' | 'self_knowledge_selection' | 'testing' | 'results' | 'diseases' | 'faq';
+type AppStep = 'welcome' | 'selection' | 'self_knowledge_selection' | 'testing' | 'results' | 'diseases' | 'faq' | 'admin';
 
 const FAQ_DATA = [
   {
@@ -107,6 +107,10 @@ export default function App() {
   const [isSharedView, setIsSharedView] = useState(false);
   const [sharedMessage, setSharedMessage] = useState<string | null>(null);
 
+  // Admin dashboard state
+  const [adminData, setAdminData] = useState<ResultSummary[]>([]);
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTestId = selectedTests[currentTestIndex];
   const currentTest = currentTestId ? TESTS.find(t => t.id === currentTestId) : null;
@@ -197,40 +201,51 @@ export default function App() {
     const reportHash = params.get('report');
     const dbId = params.get('r');
 
-    if (dbId) {
+    if (params.get('admin') === 'true') {
+        setStep('admin');
+        setIsAdminLoading(true);
+        listResults().then(data => {
+            setAdminData(data);
+        }).catch(() => {
+            alert('Не удалось загрузить данные дашборда.');
+        }).finally(() => {
+            setIsAdminLoading(false);
+        });
+    } else if (dbId) {
         // Mode: Load from DB by short ID
         setIsLoading(true);
         setLoadingText("Загрузка результатов...");
-        import('./services/dbService').then(({ loadResults }) => {
-            loadResults(dbId).then(data => {
-                if (data && data.test_ids && data.scores) {
-                    const validTestIds = (data.test_ids as string[]).filter(id => TESTS.some(t => t.id === id));
-                    const scores = data.scores as Record<string, { score: number; interpretation: string }>;
-                    const severities = (data.severities || {}) as Record<string, string>;
+        loadResults(dbId).then(data => {
+            if (data && data.test_ids && data.scores) {
+                const validTestIds = (data.test_ids as string[]).filter(id => TESTS.some(t => t.id === id));
+                const scores = data.scores as Record<string, { score: number; interpretation: string }>;
+                const severities = (data.severities || {}) as Record<string, string>;
 
-                    const reconstructedAnswers: UserAnswers = {};
-                    const reconstructedResults: TestResult[] = validTestIds.map(testId => ({
-                        testId,
-                        testName: TESTS.find(t => t.id === testId)?.name || testId,
-                        score: scores[testId]?.score ?? 0,
-                        interpretation: scores[testId]?.interpretation ?? '',
-                        severity: (severities[testId] as any) ?? 'normal',
-                    }));
+                const reconstructedResults: TestResult[] = validTestIds.map(testId => ({
+                    testId,
+                    testName: TESTS.find(t => t.id === testId)?.name || testId,
+                    score: scores[testId]?.score ?? 0,
+                    interpretation: scores[testId]?.interpretation ?? '',
+                    severity: (severities[testId] as any) ?? 'normal',
+                }));
 
-                    setSelectedTests(validTestIds);
-                    setAnswers(reconstructedAnswers);
-                    setResults(reconstructedResults);
-                    if (data.ai_interpretation) {
-                        setAiInterpretation(data.ai_interpretation);
-                    }
-                    setIsSharedView(true);
-                    setStep('results');
-                    setSharedMessage("Режим просмотра результатов (Только чтение)");
-                } else {
-                    alert("Ссылка недействительна или результаты не найдены.");
+                setSelectedTests(validTestIds);
+                setAnswers({});
+                setResults(reconstructedResults);
+                if (data.ai_interpretation) {
+                    setAiInterpretation(data.ai_interpretation);
                 }
-                setIsLoading(false);
-            });
+                setIsSharedView(true);
+                setStep('results');
+                setSharedMessage("Режим просмотра результатов (Только чтение)");
+            } else {
+                alert("Ссылка недействительна или результаты не найдены.");
+            }
+        }).catch(err => {
+            console.error('Failed to load shared results:', err);
+            alert('Не удалось загрузить результаты. Проверьте подключение к интернету.');
+        }).finally(() => {
+            setIsLoading(false);
         });
     } else if (reportHash) {
         // Mode: View Result (Therapist viewing client result)
@@ -1655,15 +1670,112 @@ export default function App() {
                      Данный отчет сформирован автоматически на основе ваших ответов. Результаты не являются окончательным медицинским диагнозом. Для точной интерпретации и назначения лечения необходима консультация специалиста <strong className="text-[#4A6D7C]">Клиники «Диалектика»</strong>.
                    </p>
                  </div>
-                 
+
                  <div className="pt-6">
-                   <button 
+                   <button
                      onClick={handleGoHome}
                      className="text-slate-400 hover:text-[#4A6D7C] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 mx-auto transition-colors"
                    >
                      <i className="fas fa-redo"></i> Начать новую диагностику
                    </button>
                  </div>
+              </div>
+            </div>
+          )}
+
+          {step === 'admin' && (
+            <div className="animate-fade-in-up max-w-5xl mx-auto w-full space-y-6">
+              <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-white/60 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-2xl font-extrabold text-slate-900">Дашборд</h2>
+                    <p className="text-slate-500 text-sm mt-1">Сохранённые результаты диагностики</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        setIsAdminLoading(true);
+                        listResults().then(setAdminData).catch(() => alert('Ошибка обновления')).finally(() => setIsAdminLoading(false));
+                      }}
+                      disabled={isAdminLoading}
+                      className="px-4 py-2 bg-[#4A6D7C]/10 text-[#4A6D7C] rounded-xl font-semibold text-sm hover:bg-[#4A6D7C]/20 transition-all disabled:opacity-50"
+                    >
+                      <i className={`fas fa-rotate-right mr-1.5 ${isAdminLoading ? 'fa-spin' : ''}`}></i>
+                      Обновить
+                    </button>
+                  </div>
+                </div>
+
+                {isAdminLoading ? (
+                  <div className="text-center py-16 text-slate-400">
+                    <i className="fas fa-circle-notch fa-spin text-3xl mb-3"></i>
+                    <p className="text-sm">Загрузка данных...</p>
+                  </div>
+                ) : adminData.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400">
+                    <i className="fas fa-inbox text-3xl mb-3"></i>
+                    <p className="text-sm">Нет сохранённых результатов</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <div className="text-xs text-slate-400 mb-3">{adminData.length} записей</div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-200">
+                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Дата</th>
+                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Тесты</th>
+                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3 pr-4">Уровень</th>
+                          <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider pb-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {adminData.map(row => {
+                          const sevColors: Record<string, string> = {
+                            severe: 'bg-red-100 text-red-700',
+                            moderate: 'bg-orange-100 text-orange-700',
+                            mild: 'bg-yellow-100 text-yellow-700',
+                            normal: 'bg-green-100 text-green-700',
+                          };
+                          const hasSevere = Object.values(row.severities || {}).some(s => s === 'severe');
+                          const hasModerate = !hasSevere && Object.values(row.severities || {}).some(s => s === 'moderate');
+                          const worstSev = hasSevere ? 'severe' : hasModerate ? 'moderate' : 'normal';
+                          const date = new Date(row.created_at).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+                          return (
+                            <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="py-3 pr-4 text-slate-500 whitespace-nowrap">{date}</td>
+                              <td className="py-3 pr-4">
+                                <div className="flex flex-wrap gap-1">
+                                  {(row.test_ids || []).map(tid => (
+                                    <span key={tid} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-medium">{TESTS.find(t => t.id === tid)?.name || tid}</span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="py-3 pr-4">
+                                <div className="flex flex-wrap gap-1">
+                                  {Object.entries(row.severities || {}).map(([tid, sev]) => (
+                                    <span key={tid} className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${sevColors[sev] || sevColors.normal}`}>
+                                      {TESTS.find(t => t.id === tid)?.name || tid}: {sev}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="py-3 text-right">
+                                <a
+                                  href={`${window.location.origin}${window.location.pathname}?r=${row.id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="px-3 py-1.5 bg-[#4A6D7C] text-white rounded-lg text-xs font-semibold hover:bg-[#2E4857] transition-colors whitespace-nowrap"
+                                >
+                                  Открыть
+                                </a>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}

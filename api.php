@@ -72,5 +72,19 @@ if ($action === 'get' && isset($_GET['id'])) {
     exit();
 }
 
+// Список всех результатов для дашборда
+if ($action === 'list') {
+    $stmt = $pdo->query(
+        'SELECT id, created_at, test_ids, severities FROM results ORDER BY created_at DESC LIMIT 200'
+    );
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as &$row) {
+        $row['test_ids']   = json_decode($row['test_ids']);
+        $row['severities'] = json_decode($row['severities'], true) ?: (object)[];
+    }
+    echo json_encode($rows);
+    exit();
+}
+
 http_response_code(400);
 echo json_encode(['error' => 'Unknown action']);
