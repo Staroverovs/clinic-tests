@@ -118,6 +118,9 @@ export default function App() {
   // Track how the user entered the diagnostic flow
   const [entryPoint, setEntryPoint] = useState<'smart' | 'manual' | 'lab' | ''>('');
 
+  // Inline error for URL parsing failures (replaces alert() dialogs)
+  const [urlError, setUrlError] = useState<string | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTestId = selectedTests[currentTestIndex];
   const currentTest = currentTestId ? TESTS.find(t => t.id === currentTestId) : null;
@@ -215,7 +218,7 @@ export default function App() {
             listResults().then(data => {
                 setAdminData(data);
             }).catch(() => {
-                alert('Не удалось загрузить данные дашборда.');
+                setUrlError('Не удалось загрузить данные дашборда. Проверьте подключение к интернету.');
             }).finally(() => {
                 setIsAdminLoading(false);
             });
@@ -248,11 +251,11 @@ export default function App() {
                 setStep('results');
                 setSharedMessage("Режим просмотра результатов (Только чтение)");
             } else {
-                alert("Ссылка недействительна или результаты не найдены.");
+                setUrlError('Ссылка недействительна или результаты не найдены.');
             }
         }).catch(err => {
             console.error('Failed to load shared results:', err);
-            alert('Не удалось загрузить результаты. Проверьте подключение к интернету.');
+            setUrlError('Не удалось загрузить результаты. Проверьте подключение к интернету.');
         }).finally(() => {
             setIsLoading(false);
         });
@@ -279,7 +282,7 @@ export default function App() {
                 setStep('results');
                 setSharedMessage("Режим просмотра результатов (Только чтение)");
             } else {
-                alert("Ошибка ссылки: Некорректные данные.");
+                setUrlError('Ошибка ссылки: некорректные данные.');
             }
             setIsLoading(false);
         }, 500);
@@ -779,6 +782,27 @@ export default function App() {
       Записаться к врачу
     </a>
   );
+
+  if (urlError) {
+    return (
+      <div className="max-w-5xl 2xl:max-w-7xl mx-auto py-8 px-4 sm:px-6 relative z-10">
+        <Header />
+        <div className="max-w-xl mx-auto flex flex-col items-center justify-center min-h-[500px] p-12 text-center glass-panel rounded-[32px] animate-scale-in">
+            <div className="w-20 h-20 mb-8 rounded-full bg-rose-50 flex items-center justify-center">
+              <i className="fas fa-exclamation-triangle text-rose-400 text-3xl"></i>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-800 mb-3">Не удалось открыть ссылку</h3>
+            <p className="text-slate-500 text-sm mb-8 leading-relaxed">{urlError}</p>
+            <button
+              onClick={() => { setUrlError(null); resetApp(); }}
+              className="px-8 py-3 bg-[#4A6D7C] text-white rounded-xl font-semibold hover:bg-[#3d5c6b] transition-colors"
+            >
+              На главную
+            </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
