@@ -521,9 +521,10 @@ export default function App() {
     setIsLoading(true);
     setLoadingText("Анализируем клиническую картину...");
     try {
-      const recommendedTestIds = await getSmartRecommendations(complaints, depth, TESTS);
+      const clinicalTests = TESTS.filter(t => t.category !== 'self_knowledge' && t.category !== 'personality' && t.category !== 'wellbeing');
+      const recommendedTestIds = await getSmartRecommendations(complaints, depth, clinicalTests);
       const validTestIds = recommendedTestIds.filter(id => {
-          const t = TESTS.find(test => test.id === id);
+          const t = clinicalTests.find(test => test.id === id);
           return t && (!t.externalUrl || t.questions.length > 0);
       });
       const finalTests = validTestIds.length > 0 ? validTestIds : ['phq9', 'gad7'];
