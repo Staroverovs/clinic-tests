@@ -2,9 +2,9 @@ import { TestResult, TestDefinition } from '../types';
 
 export type DiagnosticDepth = 'express' | 'standard' | 'deep';
 
-// When VITE_GEMINI_KEY is baked in at build time, call Google directly from the browser.
-// Otherwise fall back to the server-side proxy (/api/gemini) used on Vercel.
-const DIRECT_KEY = (import.meta as any).env?.VITE_GEMINI_KEY as string | undefined;
+// When GEMINI_API_KEY is baked in at build time, call Google directly from the browser.
+// This bypasses the server-side proxy (which is geo-blocked in Russia).
+const DIRECT_KEY: string = process.env.GEMINI_API_KEY || '';
 
 const callGemini = async (model: string, contents: string, config?: Record<string, any>): Promise<string> => {
   if (DIRECT_KEY) {
