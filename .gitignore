@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Server-side files with secrets (deploy manually via SCP)
+api/gemini.php
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

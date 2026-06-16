@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://clinic-tests.vercel.app/sitemap.xml
+Sitemap: https://cnpp.ru/tests/sitemap.xml

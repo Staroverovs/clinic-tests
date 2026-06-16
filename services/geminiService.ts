@@ -2,7 +2,28 @@ import { TestResult, TestDefinition } from '../types';
 
 export type DiagnosticDepth = 'express' | 'standard' | 'deep';
 
+// When VITE_GEMINI_KEY is baked in at build time, call Google directly from the browser.
+// Otherwise fall back to the server-side proxy (/api/gemini) used on Vercel.
+const DIRECT_KEY = (import.meta as any).env?.VITE_GEMINI_KEY as string | undefined;
+
 const callGemini = async (model: string, contents: string, config?: Record<string, any>): Promise<string> => {
+  if (DIRECT_KEY) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${DIRECT_KEY}`;
+    const body: any = {
+      contents: [{ role: 'user', parts: [{ text: contents }] }],
+    };
+    if (config?.systemInstruction) body.systemInstruction = { parts: [{ text: config.systemInstruction }] };
+    const genConfig: any = {};
+    if (config?.responseMimeType) genConfig.responseMimeType = config.responseMimeType;
+    if (config?.temperature !== undefined) genConfig.temperature = config.temperature;
+    if (config?.maxOutputTokens !== undefined) genConfig.maxOutputTokens = config.maxOutputTokens;
+    if (Object.keys(genConfig).length) body.generationConfig = genConfig;
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(JSON.stringify(data));
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  }
+
   const res = await fetch('/api/gemini', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
