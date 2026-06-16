@@ -121,6 +121,14 @@ export default function App() {
   // Inline error for URL parsing failures (replaces alert() dialogs)
   const [urlError, setUrlError] = useState<string | null>(null);
 
+  // Lightweight non-blocking toast for AI/network errors (replaces alert() dialogs)
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 7000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const currentTestId = selectedTests[currentTestIndex];
   const currentTest = currentTestId ? TESTS.find(t => t.id === currentTestId) : null;
@@ -527,9 +535,9 @@ export default function App() {
       console.error(e);
       if (e.message === 'AI_KEY_INVALID') {
         setHasAiKey(false);
-        alert("Ошибка ключа AI. Пожалуйста, подключите ключ заново.");
+        setToast("Ошибка ключа AI. Пожалуйста, подключите ключ заново.");
       } else {
-        alert("Не удалось загрузить рекомендации. Выберите тесты вручную.");
+        setToast("Не удалось загрузить рекомендации. Выберите тесты вручную.");
         setStep('selection');
       }
     } finally {
@@ -550,9 +558,9 @@ export default function App() {
         console.error(e);
         if (e.message === 'AI_KEY_INVALID') {
           setHasAiKey(false);
-          alert("Ошибка ключа AI. Пожалуйста, подключите ключ заново.");
+          setToast("Ошибка ключа AI. Пожалуйста, подключите ключ заново.");
         } else {
-          alert("Ошибка при подборе. Выберите тесты вручную.");
+          setToast("Ошибка при подборе. Выберите тесты вручную.");
         }
     } finally {
         setIsLoading(false);
@@ -618,7 +626,7 @@ export default function App() {
       scrollToTop();
     } catch (error) {
       console.error("Error processing results:", error);
-      alert("Произошла ошибка при обработке результатов. Пожалуйста, попробуйте еще раз или выберите меньше тестов.");
+      setToast("Произошла ошибка при обработке результатов. Пожалуйста, попробуйте еще раз или выберите меньше тестов.");
       setStep('selection');
     } finally {
       setIsLoading(false);
@@ -655,9 +663,9 @@ export default function App() {
         console.error(e);
         if (e.message === 'AI_KEY_INVALID') {
           setHasAiKey(false);
-          alert("Ошибка ключа AI. Пожалуйста, подключите ключ заново.");
+          setToast("Ошибка ключа AI. Пожалуйста, подключите ключ заново.");
         } else {
-          alert("Ошибка при обращении к AI сервису.");
+          setToast("Ошибка при обращении к AI сервису. Попробуйте ещё раз.");
         }
     } finally {
         setIsAiLoading(false);
@@ -826,7 +834,17 @@ export default function App() {
   return (
     <div ref={containerRef} className="max-w-5xl 2xl:max-w-7xl mx-auto py-4 px-4 sm:px-6 sm:py-6 font-sans relative z-10">
       <Header />
-      
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] bg-slate-900 text-white px-5 py-4 rounded-2xl shadow-2xl flex items-start gap-3 animate-fade-in-up">
+          <i className="fas fa-circle-exclamation text-amber-400 mt-0.5"></i>
+          <p className="text-sm flex-1">{toast}</p>
+          <button onClick={() => setToast(null)} className="text-slate-400 hover:text-white">
+            <i className="fas fa-xmark"></i>
+          </button>
+        </div>
+      )}
+
       {/* Container for main content without internal scrolling */}
       <div className="glass-panel rounded-[32px] min-h-[650px] flex flex-col transition-all duration-700 relative">
         <div className="p-4 sm:p-8 flex-grow flex flex-col">
