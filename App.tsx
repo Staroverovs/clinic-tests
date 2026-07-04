@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { TESTS, CATEGORY_LABELS, DISEASES } from './constants';
 import { TestDefinition, UserAnswers, TestResult, Disease } from './types';
-import { getSmartRecommendations, getSelfKnowledgeRecommendations, getSelfKnowledgeInterpretation, getAggregateInterpretation, DiagnosticDepth } from './services/geminiService';
+import { getSmartRecommendations, getSelfKnowledgeRecommendations, getSelfKnowledgeInterpretation, getAggregateInterpretation, askResultsQuestion, ChatMessage, DiagnosticDepth } from './services/geminiService';
 import { encodeBattery, decodeBattery, encodeResults, decodeResults } from './services/shareService';
 import { saveResults, loadResults, listResults, ResultSummary } from './services/dbService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -91,6 +91,11 @@ export default function App() {
   const [loadingText, setLoadingText] = useState('Анализ данных...'); 
   const [results, setResults] = useState<TestResult[]>([]);
   const [aiInterpretation, setAiInterpretation] = useState('');
+
+  // Follow-up chat with AI about the results
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [pressedAnswerKey, setPressedAnswerKey] = useState<string | null>(null);
@@ -304,6 +309,27 @@ export default function App() {
             setStep('selection'); // Or directly to testing? Better to selection to let them confirm.
             setSharedMessage("Вам назначен список тестов специалистом.");
         }
+    } else {
+        // Mode: SEO deep link to a single test (?test=phq9)
+        const deepTestId = params.get('test');
+        const deepTest = deepTestId ? TESTS.find(t => t.id === deepTestId) : undefined;
+        if (deepTest) {
+            setSelectedTests([deepTest.id]);
+            const isSelfKnowledge = ['personality', 'self_knowledge', 'wellbeing'].includes(deepTest.category);
+            setStep(isSelfKnowledge ? 'self_knowledge_selection' : 'selection');
+            setSharedMessage(`Тест «${deepTest.name}» выбран — нажмите «Начать», чтобы пройти его.`);
+
+            // Unique title/description/canonical per test so search engines index each URL separately
+            document.title = `${deepTest.name} — пройти тест онлайн бесплатно | Клиника Диалектика`;
+            const metaDesc = document.querySelector('meta[name="description"]');
+            if (metaDesc && deepTest.description) {
+                metaDesc.setAttribute('content', `${deepTest.name}: ${deepTest.description} Пройдите тест онлайн бесплатно с ИИ-анализом результатов.`);
+            }
+            const canonical = document.querySelector('link[rel="canonical"]');
+            if (canonical) {
+                canonical.setAttribute('href', `https://cnpp.ru/tests/?test=${deepTest.id}`);
+            }
+        }
     }
   }, []);
 
@@ -348,6 +374,8 @@ export default function App() {
       setAnswers({});
       setResults([]);
       setAiInterpretation('');
+      setChatMessages([]);
+      setChatInput('');
       setComplaints('');
       setSelfGoal('');
       setDepth('standard');
@@ -623,6 +651,7 @@ export default function App() {
       setResults(newResults);
       // AI Interpretation is NOT called automatically here anymore.
       setAiInterpretation('');
+      setChatMessages([]);
       setStep('results');
       scrollToTop();
     } catch (error) {
@@ -660,6 +689,7 @@ export default function App() {
         }
         
         setAiInterpretation(aggregate);
+        setChatMessages([]);
     } catch (e: any) {
         console.error(e);
         if (e.message === 'AI_KEY_INVALID') {
@@ -670,6 +700,24 @@ export default function App() {
         }
     } finally {
         setIsAiLoading(false);
+    }
+  };
+
+  const handleSendChatMessage = async () => {
+    const question = chatInput.trim();
+    if (!question || isChatLoading) return;
+    setChatInput('');
+    const historyBefore = chatMessages;
+    setChatMessages([...historyBefore, { role: 'user', text: question }]);
+    setIsChatLoading(true);
+    try {
+      const answer = await askResultsQuestion(results, aiInterpretation, complaints || selfGoal, historyBefore, question);
+      setChatMessages(prev => [...prev, { role: 'model', text: answer }]);
+    } catch (e) {
+      console.error('Chat error:', e);
+      setChatMessages(prev => [...prev, { role: 'model', text: 'Не удалось получить ответ. Проверьте подключение к интернету и попробуйте ещё раз.' }]);
+    } finally {
+      setIsChatLoading(false);
     }
   };
 
@@ -754,7 +802,24 @@ export default function App() {
   };
 
   const Header = () => (
-      <header className="flex justify-end items-center py-4 px-2 sm:px-0 mb-4 no-print z-50 relative">
+      <header className="flex justify-between items-center py-4 px-2 sm:px-0 mb-4 no-print z-50 relative">
+          <a
+              href="https://cnpp.ru"
+              className="flex items-center gap-2.5 group"
+              title="Перейти на сайт клиники «Диалектика»"
+          >
+              <img
+                  src="https://cnpp.ru/wp-content/uploads/2026/04/cropped-dialectica-100x100.png"
+                  alt="Клиника Диалектика"
+                  className="w-9 h-9 object-contain rounded-lg shadow-sm group-hover:scale-105 transition-transform"
+              />
+              <div className="leading-tight">
+                  <div className="text-sm font-extrabold text-slate-800 group-hover:text-[#4A6D7C] transition-colors">Диалектика</div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-bold group-hover:text-[#4A6D7C]/70 transition-colors">
+                      <i className="fas fa-arrow-left mr-1 text-[8px]"></i>на сайт клиники
+                  </div>
+              </div>
+          </a>
           {step !== 'welcome' && (
               <button 
                   onClick={handleGoHome}
@@ -1621,6 +1686,77 @@ export default function App() {
                     
                     <div className="prose prose-slate max-w-none text-slate-600 relative z-10 text-sm sm:text-base leading-relaxed">
                     {renderMarkdown(aiInterpretation)}
+                    </div>
+
+                    {/* Follow-up questions chat */}
+                    <div className="mt-8 pt-6 border-t border-slate-200/50 relative z-10 no-print">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 shrink-0">
+                                <i className="fas fa-comments text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 className="text-base font-bold text-slate-800">Вопросы по результатам</h3>
+                                <p className="text-xs text-slate-400">ИИ ответит на уточняющие вопросы по вашему заключению</p>
+                            </div>
+                        </div>
+
+                        {chatMessages.length > 0 && (
+                            <div className="space-y-4 mb-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
+                                {chatMessages.map((msg, i) => (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                                            msg.role === 'user'
+                                                ? 'bg-[#4A6D7C] text-white rounded-br-md'
+                                                : 'bg-slate-50 border border-slate-100 text-slate-600 rounded-bl-md'
+                                        }`}>
+                                            {msg.role === 'user' ? msg.text : renderMarkdown(msg.text)}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isChatLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-slate-400">
+                                            <i className="fas fa-circle-notch fa-spin mr-2"></i>Печатает...
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {chatMessages.length === 0 && !isChatLoading && (
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {['Что мне делать в первую очередь?', 'Насколько серьёзны мои результаты?', 'К какому специалисту обратиться?'].map(q => (
+                                    <button
+                                        key={q}
+                                        onClick={() => { setChatInput(q); }}
+                                        className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-500 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+                                    >
+                                        {q}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        <form
+                            onSubmit={e => { e.preventDefault(); handleSendChatMessage(); }}
+                            className="flex gap-2"
+                        >
+                            <input
+                                type="text"
+                                value={chatInput}
+                                onChange={e => setChatInput(e.target.value)}
+                                placeholder="Задайте вопрос по вашим результатам..."
+                                maxLength={500}
+                                className="flex-1 px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-400/20 transition-all"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!chatInput.trim() || isChatLoading}
+                                className="px-5 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                            >
+                                <i className="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
                     </div>
                 </div>
                 ) : (

@@ -118,6 +118,54 @@ ${summary}
   }
 }
 
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
+export async function askResultsQuestion(
+  results: TestResult[],
+  interpretation: string,
+  userComplaints: string,
+  history: ChatMessage[],
+  question: string
+): Promise<string> {
+  const summary = results.map(r => {
+    let text = `${r.testName}: ${r.severity} — ${r.interpretation} (балл: ${r.score})`;
+    if (r.subscales?.length) {
+      text += ` [${r.subscales.map(s => `${s.name}: ${s.score}/${s.maxScore}`).join('; ')}]`;
+    }
+    return text;
+  }).join('\n');
+
+  const systemInstruction = `Ты — опытный клинический психолог. Пользователь прошёл психологические тесты и получил заключение. Твоя задача — отвечать на его уточняющие вопросы по результатам.
+
+Контекст:
+1. Жалобы/запрос пользователя: "${userComplaints || 'Не указаны'}"
+2. Результаты тестов:
+${summary}
+3. Ранее выданное заключение:
+${interpretation}
+
+Правила:
+- Отвечай только на вопросы, связанные с результатами, психологией и психическим здоровьем. На посторонние темы вежливо откажись.
+- Опирайся на конкретные данные тестов выше.
+- Не ставь диагнозов; при серьёзных вопросах напоминай о необходимости очной консультации специалиста.
+- Отвечай кратко и по существу (до 300 слов), формат Markdown.
+- Тон: тёплый, поддерживающий, на "вы".`;
+
+  const dialog = history.map(m => `${m.role === 'user' ? 'Пользователь' : 'Психолог'}: ${m.text}`).join('\n\n');
+  const contents = dialog
+    ? `История диалога:\n${dialog}\n\nНовый вопрос пользователя: ${question}`
+    : `Вопрос пользователя: ${question}`;
+
+  return callGemini('gemini-2.5-flash', contents, {
+    systemInstruction,
+    temperature: 0.6,
+    maxOutputTokens: 2000,
+  });
+}
+
 export async function getAggregateInterpretation(results: TestResult[], userComplaints: string = ''): Promise<string> {
   if (results.length === 0) return "Нет данных для интерпретации.";
 

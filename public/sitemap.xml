@@ -5,4 +5,27 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+  <url><loc>https://cnpp.ru/tests/?test=phq9</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=bdi</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=gad7</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=bai</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=hads</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=asrs</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=oci_r</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=eat26</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=tas20</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=bsl23</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=cses</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=oso</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=epq_r_short</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=16pf_screen</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=self_concept_gap</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=mbi</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=pcl5</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=ders36</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=bfi10</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=rses</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=gses</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=iri</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://cnpp.ru/tests/?test=qcae</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>
