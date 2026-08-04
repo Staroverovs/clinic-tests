@@ -13,6 +13,13 @@ const callGemini = async (model: string, contents: string, config?: Record<strin
   return data.text || '';
 };
 
+// Передаём и сырое число, и уже посчитанную клиническую severity-метку по подшкале —
+// так ИИ не додумывает интерпретацию сам там, где она уже закодирована в constants.tsx.
+const formatSubscales = (subscales?: { name: string; score: number; maxScore: number; severity?: string }[]) =>
+  subscales?.length
+    ? subscales.map(s => `${s.name}: ${s.score}/${s.maxScore}${s.severity ? ` (${s.severity})` : ''}`).join('; ')
+    : '';
+
 const parseAIJson = (text: string) => {
   try {
     const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -87,7 +94,7 @@ export async function getSelfKnowledgeInterpretation(results: TestResult[], user
   const summary = results.map(r => {
     let text = `Тест "${r.testName}": ${r.interpretation} (Балл: ${r.score}).`;
     if (r.subscales?.length) {
-      text += ` Детализация: [${r.subscales.map(s => `${s.name}: ${s.score}/${s.maxScore}`).join('; ')}]`;
+      text += ` Детализация: [${formatSubscales(r.subscales)}]`;
     }
     return text;
   }).join('\n');
@@ -133,7 +140,7 @@ export async function askResultsQuestion(
   const summary = results.map(r => {
     let text = `${r.testName}: ${r.severity} — ${r.interpretation} (балл: ${r.score})`;
     if (r.subscales?.length) {
-      text += ` [${r.subscales.map(s => `${s.name}: ${s.score}/${s.maxScore}`).join('; ')}]`;
+      text += ` [${formatSubscales(r.subscales)}]`;
     }
     return text;
   }).join('\n');
@@ -172,7 +179,7 @@ export async function getAggregateInterpretation(results: TestResult[], userComp
   const summary = results.map(r => {
     let text = `${r.testName}: ${r.severity} (${r.interpretation}). Баллы: ${r.score}.`;
     if (r.subscales?.length) {
-      text += ` Подшкалы: [${r.subscales.map(s => `${s.name}: ${s.score}/${s.maxScore}`).join(', ')}]`;
+      text += ` Подшкалы: [${formatSubscales(r.subscales)}]`;
     }
     return text;
   }).join('\n');

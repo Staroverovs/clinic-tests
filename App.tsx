@@ -3,7 +3,7 @@ import { TESTS, CATEGORY_LABELS, DISEASES } from './constants';
 import { TestDefinition, UserAnswers, TestResult, Disease } from './types';
 import { getSmartRecommendations, getSelfKnowledgeRecommendations, getSelfKnowledgeInterpretation, getAggregateInterpretation, askResultsQuestion, ChatMessage, DiagnosticDepth } from './services/geminiService';
 import { encodeBattery, decodeBattery, encodeResults, decodeResults } from './services/shareService';
-import { saveResults, loadResults, listResults, ResultSummary } from './services/dbService';
+import { saveResults, loadResults, listResults, loadFullResult, ResultSummary, SaveResultsPayload } from './services/dbService';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type AppStep = 'welcome' | 'selection' | 'self_knowledge_selection' | 'testing' | 'results' | 'diseases' | 'faq' | 'admin';
@@ -119,6 +119,26 @@ export default function App() {
   const [adminUser, setAdminUser] = useState('');
   const [adminPass, setAdminPass] = useState('');
   const [adminLoginError, setAdminLoginError] = useState('');
+  // Экран деталей пациента (сырые ответы + подшкалы) — только внутри защищённой админ-панели,
+  // никогда не пересекается с публичным ?r=id путём просмотра результатов.
+  const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
+  const [adminDetail, setAdminDetail] = useState<(SaveResultsPayload & { id: string; created_at: string }) | null>(null);
+  const [isAdminDetailLoading, setIsAdminDetailLoading] = useState(false);
+  const [adminDetailError, setAdminDetailError] = useState<string | null>(null);
+
+  const openAdminDetail = (id: string) => {
+    setSelectedAdminId(id);
+    setAdminDetail(null);
+    setAdminDetailError(null);
+    setIsAdminDetailLoading(true);
+    loadFullResult(id)
+      .then(data => {
+        if (!data) { setAdminDetailError('Запись не найдена.'); return; }
+        setAdminDetail(data);
+      })
+      .catch(() => setAdminDetailError('Не удалось загрузить детали. Проверьте подключение.'))
+      .finally(() => setIsAdminDetailLoading(false));
+  };
 
   // Track how the user entered the diagnostic flow
   const [entryPoint, setEntryPoint] = useState<'smart' | 'manual' | 'lab' | ''>('');
@@ -450,6 +470,7 @@ export default function App() {
       const id = await saveResults({
         test_ids: selectedTests,
         scores,
+        answers,
         ai_interpretation: aiInterpretation,
         severities,
         complaints: complaints || undefined,
@@ -600,10 +621,14 @@ export default function App() {
     if (isTransitioning) return;
     setIsTransitioning(true);
 
-    setAnswers(prev => ({
-      ...prev,
-      [testId]: { ...(prev[testId] || {}), [qId]: score }
-    }));
+    // Считаем обновлённые ответы синхронно (не через setAnswers(prev => ...)), чтобы можно было
+    // передать их напрямую в processResults ниже — иначе на последнем вопросе теста итоговый
+    // расчёт результата не успевает увидеть только что данный ответ (устаревший closure над answers).
+    const updatedAnswers: UserAnswers = {
+      ...answers,
+      [testId]: { ...(answers[testId] || {}), [qId]: score }
+    };
+    setAnswers(updatedAnswers);
 
     setTimeout(() => {
       if (currentTest && currentQuestionIndex < currentTest.questions.length - 1) {
@@ -615,8 +640,8 @@ export default function App() {
         scrollToTop();
         setIsTransitioning(false);
       } else {
-        processResults();
-        setIsTransitioning(false); 
+        processResults(updatedAnswers);
+        setIsTransitioning(false);
       }
     }, 250);
   };
@@ -643,11 +668,13 @@ export default function App() {
       }).filter((item): item is TestResult => item !== null);
   };
 
-  const processResults = async () => {
+  const processResults = async (answersOverride?: UserAnswers) => {
     setIsLoading(true);
     setLoadingText("Обработка результатов...");
     try {
-      const newResults = calculateResultsPure(selectedTests, answers);
+      // answersOverride используется при вызове сразу после последнего ответа — setAnswers асинхронный,
+      // и обычное чтение состояния answers из closure тут получало бы версию БЕЗ только что данного ответа.
+      const newResults = calculateResultsPure(selectedTests, answersOverride ?? answers);
       setResults(newResults);
       // AI Interpretation is NOT called automatically here anymore.
       setAiInterpretation('');
@@ -1969,7 +1996,105 @@ export default function App() {
                     </div>
                   </div>
 
-                  {isAdminLoading ? (
+                  {selectedAdminId ? (
+                    <div>
+                      <button
+                        onClick={() => { setSelectedAdminId(null); setAdminDetail(null); setAdminDetailError(null); }}
+                        className="mb-5 px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-semibold text-xs hover:bg-slate-200 transition-all"
+                      >
+                        <i className="fas fa-arrow-left mr-1.5"></i>Назад к списку
+                      </button>
+
+                      {isAdminDetailLoading ? (
+                        <div className="text-center py-16 text-slate-400">
+                          <i className="fas fa-circle-notch fa-spin text-3xl mb-3 block"></i>
+                          <p className="text-sm">Загрузка деталей...</p>
+                        </div>
+                      ) : adminDetailError ? (
+                        <div className="text-center py-16 text-rose-500">
+                          <i className="fas fa-triangle-exclamation text-3xl mb-3 block"></i>
+                          <p className="text-sm">{adminDetailError}</p>
+                        </div>
+                      ) : adminDetail ? (
+                        <div className="space-y-6">
+                          <div className="text-xs text-slate-400">
+                            ID: <span className="font-mono">{adminDetail.id}</span> · {new Date(adminDetail.created_at).toLocaleString('ru-RU')}
+                            {(adminDetail.complaints || adminDetail.self_goal) && (
+                              <p className="text-slate-600 text-sm mt-2 not-italic">«{adminDetail.complaints || adminDetail.self_goal}»</p>
+                            )}
+                          </div>
+
+                          {adminDetail.test_ids.map(testId => {
+                            const testDef = TESTS.find(t => t.id === testId);
+                            const rawAnswers = adminDetail.answers?.[testId];
+                            if (!testDef) return (
+                              <div key={testId} className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+                                Тест «{testId}» больше не существует в текущей версии каталога — данные сохранены, но не могут быть пересчитаны.
+                              </div>
+                            );
+                            // Пересчитываем интерпретацию (включая подшкалы) на лету из сырых ответов —
+                            // так подшкалы/severity всегда актуальны текущей версии логики теста, без дублирования в БД.
+                            const computed = rawAnswers ? testDef.interpretation(rawAnswers) : null;
+
+                            return (
+                              <div key={testId} className="bg-white/70 border border-slate-200 rounded-2xl p-5">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h3 className="font-bold text-slate-800">{testDef.name}</h3>
+                                  {computed && (
+                                    <span className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${
+                                      computed.severity === 'severe' || computed.severity === 'critical' ? 'bg-red-100 text-red-700' :
+                                      computed.severity === 'moderate' ? 'bg-orange-100 text-orange-700' :
+                                      computed.severity === 'mild' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
+                                    }`}>
+                                      {computed.label}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {!rawAnswers ? (
+                                  <p className="text-xs text-slate-400 italic">Сырые ответы для этого теста не сохранены (пройден до внедрения детализации).</p>
+                                ) : (
+                                  <>
+                                    {computed?.subscales && computed.subscales.length > 0 && (
+                                      <div className="grid sm:grid-cols-2 gap-2 mb-4">
+                                        {computed.subscales.map(sub => (
+                                          <div key={sub.name} className="bg-slate-50 rounded-lg px-3 py-2 text-xs">
+                                            <div className="flex justify-between text-slate-600 font-medium">
+                                              <span>{sub.name}</span>
+                                              <span>{sub.score}/{sub.maxScore}{sub.severity ? ` — ${sub.severity}` : ''}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    <details className="group">
+                                      <summary className="cursor-pointer text-[11px] font-bold text-slate-400 uppercase tracking-wide hover:text-[#4A6D7C] list-none flex items-center gap-2 select-none">
+                                        <i className="fas fa-chevron-right text-[9px] group-open:rotate-90 transition-transform duration-200"></i>
+                                        Ответы на вопросы ({testDef.questions.length})
+                                      </summary>
+                                      <div className="mt-3 grid gap-1.5 bg-slate-50 p-3 rounded-xl text-xs">
+                                        {testDef.questions.map((q, idx) => {
+                                          const userScore = rawAnswers[q.id];
+                                          const selectedOption = q.options.find(o => o.score === userScore);
+                                          return (
+                                            <div key={q.id} className="flex justify-between items-start gap-3 border-b border-slate-200/60 pb-1.5 mb-1.5 last:border-0 last:pb-0 last:mb-0">
+                                              <span className="text-slate-600 leading-tight"><span className="font-bold opacity-50 mr-1">{idx + 1}.</span>{q.text}</span>
+                                              <span className="shrink-0 text-right font-semibold text-[#4A6D7C]">{selectedOption?.text ?? (userScore ?? '—')}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </details>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : isAdminLoading ? (
                     <div className="text-center py-16 text-slate-400">
                       <i className="fas fa-circle-notch fa-spin text-3xl mb-3 block"></i>
                       <p className="text-sm">Загрузка данных...</p>
@@ -2039,19 +2164,25 @@ export default function App() {
                                   </span>
                                   <div className="flex flex-wrap gap-1 mt-1.5">
                                     {Object.entries(row.severities || {}).filter(([, s]) => s !== 'normal').map(([tid, sev]) => (
-                                      <span key={tid} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${sevColors[sev] || sevColors.normal}`}>
+                                      <span key={tid} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${sevColors[sev as string] || sevColors.normal}`}>
                                         {TESTS.find(t => t.id === tid)?.name || tid}
                                       </span>
                                     ))}
                                   </div>
                                 </td>
                                 <td className="py-3 pr-4 text-xs text-slate-400 whitespace-nowrap">{refDomain}</td>
-                                <td className="py-3 text-right">
+                                <td className="py-3 text-right whitespace-nowrap">
+                                  <button
+                                    onClick={() => openAdminDetail(row.id)}
+                                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors mr-2"
+                                  >
+                                    <i className="fas fa-list-check mr-1"></i>Детали
+                                  </button>
                                   <a
                                     href={`${window.location.origin}${window.location.pathname}?r=${row.id}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="px-3 py-1.5 bg-[#4A6D7C] text-white rounded-lg text-xs font-semibold hover:bg-[#2E4857] transition-colors whitespace-nowrap"
+                                    className="px-3 py-1.5 bg-[#4A6D7C] text-white rounded-lg text-xs font-semibold hover:bg-[#2E4857] transition-colors"
                                   >
                                     Открыть
                                   </a>
