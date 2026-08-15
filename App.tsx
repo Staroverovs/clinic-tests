@@ -353,31 +353,26 @@ export default function App() {
     }
   }, []);
 
-  const severityMap: Record<string, { label: string, color: string, lifeImpact: string }> = {
-    normal: { 
-      label: 'В пределах нормы', 
+  const severityMap: Record<string, { label: string, color: string }> = {
+    normal: {
+      label: 'В пределах нормы',
       color: 'bg-emerald-50/80 text-emerald-700 border-emerald-100/50',
-      lifeImpact: 'Ваше состояние стабильно и является надежным ресурсом для достижения жизненных целей.'
     },
-    mild: { 
-      label: 'Лёгкая степень', 
+    mild: {
+      label: 'Лёгкая степень',
       color: 'bg-sky-50/80 text-sky-700 border-sky-100/50',
-      lifeImpact: 'Это состояние может незаметно снижать продуктивность, повышать утомляемость и лишать удовольствия от привычных мелочей.'
     },
-    moderate: { 
-      label: 'Средняя степень', 
+    moderate: {
+      label: 'Средняя степень',
       color: 'bg-amber-50/80 text-amber-700 border-amber-100/50',
-      lifeImpact: 'Вероятно, это уже сказывается на качестве работы, отношениях с близкими или сне. Вы тратите слишком много сил на борьбу с собой.'
     },
-    severe: { 
-      label: 'Выраженная степень', 
+    severe: {
+      label: 'Выраженная степень',
       color: 'bg-rose-50/80 text-rose-700 border-rose-100/50',
-      lifeImpact: 'Высокий риск эмоционального истощения. Такое состояние может блокировать развитие и мешать жить полноценной жизнью.'
     },
-    critical: { 
-      label: 'Критический уровень', 
+    critical: {
+      label: 'Требует срочного внимания',
       color: 'bg-red-50/80 text-red-800 border-red-100/50',
-      lifeImpact: 'Это сигнал SOS вашей психики. Не стоит терпеть эту боль и справляться в одиночку — профессиональная помощь необходима.'
     },
   };
 
@@ -1609,13 +1604,13 @@ export default function App() {
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-6">
                             <div className="flex-1">
                                 <h3 className="font-extrabold text-slate-900 text-xl sm:text-2xl leading-tight tracking-tight">{r.testName}</h3>
-                                <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider border backdrop-blur-sm ${badge.color}`}>
+                                <div className={`inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-[11px] font-bold tracking-wide border backdrop-blur-sm ${badge.color}`}>
                                     <span className={`w-2 h-2 rounded-full ${r.severity === 'normal' ? 'bg-emerald-500' : 'bg-current opacity-60'}`}></span>
                                     {badge.label}
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:gap-0 bg-white/50 sm:bg-transparent p-3 sm:p-0 rounded-2xl w-full sm:w-auto border border-white/60 sm:border-0">
-                                <div className="text-4xl font-black text-[#4A6D7C] leading-none">{r.score}</div>
+                                <div className="text-4xl font-bold text-[#4A6D7C] leading-none">{r.score}</div>
                                 <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest sm:mt-1">Баллов</div>
                             </div>
                         </div>
@@ -1625,58 +1620,56 @@ export default function App() {
                              <div className={`h-full rounded-full transition-all duration-1000 ${badge.color.replace('bg-', 'bg-').replace('/80', '')}`} style={{ width: `${percent}%` }}></div>
                         </div>
                         
-                        {/* Life Impact */}
-                        <div className="p-3 bg-white/40 rounded-xl border border-white/50 mb-4 flex-grow">
-                            <p className="text-xs text-slate-600 italic leading-relaxed">"{badge.lifeImpact}"</p>
-                        </div>
+                        <p className="text-sm text-slate-700 font-medium mb-1 flex-grow">{r.interpretation}</p>
 
-                        <p className="text-sm text-slate-700 font-medium mb-4">{r.interpretation}</p>
-
-                        {/* Subscales Visualization - Compact */}
-                        {r.subscales && r.subscales.length > 0 && (
-                        <div className="mt-auto pt-4 border-t border-slate-200/50 space-y-3">
-                            {r.subscales.slice(0, 4).map((sub, idx) => ( // Limit displayed subscales to keep card compact
-                            <div key={idx} className="flex flex-col gap-1">
-                                <div className="flex justify-between text-[11px] font-bold text-slate-500">
-                                    <span>{sub.name}</span>
-                                    <span>{sub.score}/{sub.maxScore}</span>
-                                </div>
-                                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                                    <div 
-                                        className="h-full bg-slate-400 rounded-full" 
-                                        style={{ width: `${Math.min((sub.score / sub.maxScore) * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            ))}
-                            {r.subscales.length > 4 && <div className="text-[10px] text-slate-400 text-center">+ еще {r.subscales.length - 4} показателей</div>}
-                        </div>
-                        )}
-
-                        {/* Detailed Answers Section (Collapsible) */}
-                        <details className="mt-4 pt-2 border-t border-slate-100/50 group">
+                        {/* Подробнее: подшкалы + детализация ответов — свёрнуто по умолчанию, чтобы карточка не была громоздкой */}
+                        {((r.subscales && r.subscales.length > 0) || testDef) && (
+                        <details className="mt-4 pt-3 border-t border-slate-200/50 group">
                             <summary className="cursor-pointer text-[11px] font-bold text-slate-400 uppercase tracking-wide hover:text-[#4A6D7C] list-none flex items-center gap-2 select-none transition-colors w-fit">
                                 <i className="fas fa-chevron-right text-[9px] group-open:rotate-90 transition-transform duration-200"></i>
-                                Детализация ответов
+                                Подробнее
                             </summary>
-                            <div className="mt-3 grid gap-1 bg-white/60 p-3 rounded-xl text-xs border border-white/60">
-                                {testDef?.questions.map((q, idx) => {
-                                    const userScore = answers[r.testId]?.[q.id];
-                                    const selectedOption = q.options.find(o => o.score === userScore);
-                                    return (
-                                        <div key={q.id} className="flex justify-between items-start gap-2 border-b border-slate-100/50 pb-1.5 mb-1.5 last:border-0 last:pb-0 last:mb-0">
-                                            <div className="flex gap-2 text-slate-600">
-                                                <span className="font-bold opacity-50">{idx + 1}.</span>
-                                                <span className="leading-tight">{q.text}</span>
-                                            </div>
-                                            <div className="shrink-0 text-right">
-                                                <span className="block font-bold text-[#4A6D7C] bg-[#4A6D7C]/10 px-1.5 py-0.5 rounded">{userScore ?? '-'}</span>
-                                            </div>
+                            <div className="mt-3 space-y-4">
+                                {r.subscales && r.subscales.length > 0 && (
+                                <div className="space-y-3">
+                                    {r.subscales.map((sub, idx) => (
+                                    <div key={idx} className="flex flex-col gap-1">
+                                        <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                                            <span>{sub.name}</span>
+                                            <span>{sub.score}/{sub.maxScore}</span>
                                         </div>
-                                    )
-                                })}
+                                        <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-slate-400 rounded-full"
+                                                style={{ width: `${Math.min((sub.score / sub.maxScore) * 100, 100)}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    ))}
+                                </div>
+                                )}
+
+                                {testDef && (
+                                <div className="grid gap-1 bg-white/60 p-3 rounded-xl text-xs border border-white/60">
+                                    {testDef.questions.map((q, idx) => {
+                                        const userScore = answers[r.testId]?.[q.id];
+                                        return (
+                                            <div key={q.id} className="flex justify-between items-start gap-2 border-b border-slate-100/50 pb-1.5 mb-1.5 last:border-0 last:pb-0 last:mb-0">
+                                                <div className="flex gap-2 text-slate-600">
+                                                    <span className="font-bold opacity-50">{idx + 1}.</span>
+                                                    <span className="leading-tight">{q.text}</span>
+                                                </div>
+                                                <div className="shrink-0 text-right">
+                                                    <span className="block font-bold text-[#4A6D7C] bg-[#4A6D7C]/10 px-1.5 py-0.5 rounded">{userScore ?? '-'}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                                )}
                             </div>
                         </details>
+                        )}
                     </div>
                     );
                     })}
