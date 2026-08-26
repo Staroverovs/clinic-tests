@@ -73,11 +73,13 @@ if ($action === 'save' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
-// Получить результаты по ID — ПУБЛИЧНЫЙ эндпоинт (пациент делится этой ссылкой).
-// Намеренно НЕ включает answers — сырые ответы на вопросы сюда не должны попадать никогда.
+// Получить результаты по ID — ссылка, которой пациент делится (в т.ч. со своим клиницистом).
+// Решение (2026-08-26): answers теперь включены и здесь — раньше были только в get_full за
+// секретом, но на практике оказалось, что именно эта ссылка и есть основной способ посмотреть
+// детализацию ответов, так что прятать их отдельно за отдельным эндпоинтом смысла не было.
 if ($action === 'get' && isset($_GET['id'])) {
     $stmt = $pdo->prepare(
-        'SELECT id, created_at, test_ids, scores, ai_interpretation, severities, complaints, self_goal, referrer, entry_point
+        'SELECT id, created_at, test_ids, scores, answers, ai_interpretation, severities, complaints, self_goal, referrer, entry_point
          FROM results WHERE id = :id'
     );
     $stmt->execute([':id' => $_GET['id']]);
@@ -92,6 +94,7 @@ if ($action === 'get' && isset($_GET['id'])) {
     $row['test_ids']   = json_decode($row['test_ids']);
     $row['scores']     = json_decode($row['scores']);
     $row['severities'] = json_decode($row['severities']);
+    $row['answers']    = $row['answers'] ? json_decode($row['answers']) : null;
 
     echo json_encode($row);
     exit();

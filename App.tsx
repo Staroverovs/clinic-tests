@@ -263,19 +263,30 @@ export default function App() {
         loadResults(dbId).then(data => {
             if (data && data.test_ids && data.scores) {
                 const validTestIds = (data.test_ids as string[]).filter(id => TESTS.some(t => t.id === id));
+                const savedAnswers = (data.answers || {}) as UserAnswers;
                 const scores = data.scores as Record<string, { score: number; interpretation: string }>;
                 const severities = (data.severities || {}) as Record<string, string>;
 
-                const reconstructedResults: TestResult[] = validTestIds.map(testId => ({
-                    testId,
-                    testName: TESTS.find(t => t.id === testId)?.name || testId,
-                    score: scores[testId]?.score ?? 0,
-                    interpretation: scores[testId]?.interpretation ?? '',
-                    severity: (severities[testId] as any) ?? 'normal',
-                }));
+                // Записи, сохранённые до внедрения хранения сырых ответов, в БД их не имеют —
+                // для таких тестов используем старый способ (score/interpretation как есть, без подшкал).
+                // Там, где сырые ответы есть — пересчитываем через ту же логику, что и остальные пути
+                // (подшкалы и интерпретация всегда актуальны текущей версии тестов).
+                const reconstructedResults: TestResult[] = validTestIds.map(testId => {
+                    const testAnswers = savedAnswers[testId];
+                    if (testAnswers && Object.keys(testAnswers).length > 0) {
+                        return calculateResultsPure([testId], savedAnswers)[0];
+                    }
+                    return {
+                        testId,
+                        testName: TESTS.find(t => t.id === testId)?.name || testId,
+                        score: scores[testId]?.score ?? 0,
+                        interpretation: scores[testId]?.interpretation ?? '',
+                        severity: (severities[testId] as any) ?? 'normal',
+                    };
+                });
 
                 setSelectedTests(validTestIds);
-                setAnswers({});
+                setAnswers(savedAnswers);
                 setResults(reconstructedResults);
                 if (data.ai_interpretation) {
                     setAiInterpretation(data.ai_interpretation);
