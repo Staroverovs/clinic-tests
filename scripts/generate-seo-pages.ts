@@ -40,10 +40,14 @@ function esc(s: string): string {
 // Достаём реально сгенерированные Vite-теги (хэшированные имена файлов) из уже собранного dist/index.html,
 // чтобы пререндер-страницы грузили тот же бандл/стили, что и основной SPA-вход.
 function extractBuiltAssetTags(indexHtml: string): { scriptTag: string; styleTag: string } {
-  const scriptMatch = indexHtml.match(/<script type="module"[^>]*src="[^"]+"[^>]*><\/script>/);
-  const styleMatch = indexHtml.match(/<link rel="stylesheet"[^>]*href="[^"]+"[^>]*>/);
+  // ВАЖНО: index.html подключает ещё и сторонний Font Awesome <link rel="stylesheet"> (CDN) —
+  // он тоже совпадает с общим "первый попавшийся <link rel=stylesheet>" паттерном и раньше
+  // ошибочно перехватывался вместо настоящего собранного бандла, из-за чего пререндер-страницы
+  // грузились полностью без Tailwind-стилей. Матчим конкретно файл из vite-сборки (/assets/*.css).
+  const scriptMatch = indexHtml.match(/<script type="module"[^>]*src="[^"]*\/assets\/[^"]+\.js"[^>]*><\/script>/);
+  const styleMatch = indexHtml.match(/<link rel="stylesheet"[^>]*href="[^"]*\/assets\/[^"]+\.css"[^>]*>/);
   if (!scriptMatch || !styleMatch) {
-    throw new Error('Не найдены собранные <script>/<link> теги в dist/index.html — запусти после `vite build`.');
+    throw new Error('Не найдены собранные <script>/<link> теги на /assets/*.{js,css} в dist/index.html — запусти после `vite build`.');
   }
   return { scriptTag: scriptMatch[0], styleTag: styleMatch[0] };
 }
