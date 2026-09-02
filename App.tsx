@@ -4,6 +4,7 @@ import { TestDefinition, UserAnswers, TestResult, Disease } from './types';
 import { getSmartRecommendations, getSelfKnowledgeRecommendations, getSelfKnowledgeInterpretation, getAggregateInterpretation, askResultsQuestion, ChatMessage, DiagnosticDepth } from './services/geminiService';
 import { encodeBattery, decodeBattery, encodeResults, decodeResults } from './services/shareService';
 import { saveResults, loadResults, listResults, loadFullResult, ResultSummary, SaveResultsPayload } from './services/dbService';
+import { getTestSeoTitle, getTestSeoDescription, getTestCanonical } from './services/seoMeta';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 type AppStep = 'welcome' | 'selection' | 'self_knowledge_selection' | 'testing' | 'results' | 'diseases' | 'faq' | 'admin';
@@ -42,8 +43,12 @@ interface TestGridCardProps {
 }
 
 const TestGridCard: React.FC<TestGridCardProps> = ({ test, onClick, isSelected = false }) => (
-    <div 
-      onClick={onClick}
+    // Настоящая <a href> — доступна краулерам и без JS (ведёт на пререндер-версию теста,
+    // см. scripts/generate-seo-pages.ts). Для интерактивного пользователя preventDefault
+    // сохраняет прежнее SPA-поведение (переключение выбора без перезагрузки страницы).
+    <a
+      href={`/tests/?test=${test.id}`}
+      onClick={e => { e.preventDefault(); onClick(); }}
       className={`p-5 sm:p-6 rounded-2xl border cursor-pointer flex flex-col h-40 sm:h-44 relative group select-none transition-all duration-300 ease-out overflow-hidden ${
           isSelected 
           ? 'border-[#4A6D7C] bg-[#4A6D7C]/10 shadow-[0_0_20px_rgba(74,109,124,0.2)] backdrop-blur-xl scale-[1.02]' 
@@ -71,7 +76,7 @@ const TestGridCard: React.FC<TestGridCardProps> = ({ test, onClick, isSelected =
           <h3 className={`font-bold text-sm sm:text-base mb-1 transition-colors leading-tight ${isSelected ? 'text-[#2E4857]' : 'text-slate-800 group-hover:text-[#4A6D7C]'}`}>{test.name}</h3>
           <p className="text-[10px] sm:text-xs text-slate-500 line-clamp-2 leading-relaxed opacity-80 group-hover:opacity-100 transition-opacity">{test.description}</p>
       </div>
-  </div>
+  </a>
 );
 
 export default function App() {
@@ -239,6 +244,11 @@ export default function App() {
 
   // URL Parsing Effect
   useEffect(() => {
+    // На пререндер-страницах (см. scripts/generate-seo-pages.ts) статический #seo-landing —
+    // это контент только для первого байта/краулеров. Как только React смонтировался, он больше
+    // не нужен — интерактивное приложение полностью берёт на себя #root.
+    document.getElementById('seo-landing')?.remove();
+
     const params = new URLSearchParams(window.location.search);
     const batteryHash = params.get('tests');
     const reportHash = params.get('report');
@@ -350,15 +360,17 @@ export default function App() {
             setStep(isSelfKnowledge ? 'self_knowledge_selection' : 'selection');
             setSharedMessage(`Тест «${deepTest.name}» выбран — нажмите «Начать», чтобы пройти его.`);
 
-            // Unique title/description/canonical per test so search engines index each URL separately
-            document.title = `${deepTest.name} — пройти тест онлайн бесплатно | Клиника Диалектика`;
+            // Unique title/description/canonical per test — тот же источник (services/seoMeta),
+            // что и у статических пререндер-страниц для краулеров, чтобы не расходились.
+            // Для чисто клиентской SPA-навигации между тестами (без полной перезагрузки).
+            document.title = getTestSeoTitle(deepTest);
             const metaDesc = document.querySelector('meta[name="description"]');
-            if (metaDesc && deepTest.description) {
-                metaDesc.setAttribute('content', `${deepTest.name}: ${deepTest.description} Пройдите тест онлайн бесплатно с ИИ-анализом результатов.`);
+            if (metaDesc) {
+                metaDesc.setAttribute('content', getTestSeoDescription(deepTest));
             }
             const canonical = document.querySelector('link[rel="canonical"]');
             if (canonical) {
-                canonical.setAttribute('href', `https://cnpp.ru/tests/?test=${deepTest.id}`);
+                canonical.setAttribute('href', getTestCanonical(deepTest));
             }
         }
     }
